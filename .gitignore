@@ -1,0 +1,35 @@
+# ---- Secretos: NUNCA se suben ----
+.streamlit/secrets.toml
+secrets.toml
+.env
+.env.*
+*.pem
+*.key
+
+# ---- Datos personales y respaldos: NUNCA se suben ----
+data/
+backups/
+respaldos/
+*.csv
+!referencia/ridet_empresas.csv
+*.xlsx
+*.xls
+.vinculate_device_id
+
+# ---- Archivos de trabajo de INEGI (el GeoJSON final de geo/ SÍ se sube) ----
+*.shp
+*.dbf
+*.shx
+*.prj
+
+# ---- Python / pruebas / sistema ----
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.coverage
+htmlcov/
+.DS_Store
+Thumbs.db
+desktop.ini
