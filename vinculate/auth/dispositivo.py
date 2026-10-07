@@ -35,7 +35,11 @@ _JS_CREAR_COOKIE = """
     var u = new URL(window.parent.location.href);
     if (u.searchParams.get('%(param)s') !== '1') {
       u.searchParams.set('%(param)s', '1');
-      window.parent.location.replace(u.toString());
+      // El iframe del componente está en un sandbox que NO puede navegar a su padre (Chrome lo bloquea). Un <script>
+      // insertado en el documento padre (mismo origen) corre con los permisos del padre y sí puede recargarlo.
+      var s = doc.createElement('script');
+      s.textContent = 'window.location.replace(' + JSON.stringify(u.toString()) + ');';
+      doc.head.appendChild(s);
     }
   } catch (e) { /* sin acceso al documento padre: el servidor mostrará el aviso */ }
 })();
@@ -97,7 +101,7 @@ def asegurar_dispositivo() -> str:
         st.stop()
 
     componentes.html(_JS_CREAR_COOKIE % {"cookie": COOKIE, "param": PARAM_RECARGA}, height=0)
-    st.caption("Preparando este equipo…")
+    st.caption("Preparando este equipo… Si esta pantalla no avanza en unos segundos, recarga la página (F5).")
     st.stop()
 
 
