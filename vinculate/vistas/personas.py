@@ -15,6 +15,7 @@ from ..core.catalogos_academicos import (
     escolaridad_canonica, grupo_canonico, opcion_canonica,
 )
 from ..core.constantes import PERSONAS_COLS, SIN_DATO, TIPOS_VINCULACION
+from ..core.normalizacion import agrupar_tipo_vinculacion
 from ..core.personas import obtener_personas_maestras, resumen_vinculaciones_por_persona
 from ..core.texto import normalizar_texto, texto_vacio
 from ..core.ubicacion import MUNICIPIOS_TLAXCALA, OPCIONES_UBICACION_FILTRO, normalizar_ubicacion_mexico, opciones_ubicacion
@@ -154,7 +155,7 @@ def _seccion_analisis(s: Sesion) -> None:
     if vista == "Resumen":
         c1, c2 = st.columns(2)
         with c1:
-            tipos = charts.conteo(pf["vinculacion"], "Tipo", "Vinculaciones")
+            tipos = charts.conteo(agrupar_tipo_vinculacion(pf["vinculacion"]), "Tipo", "Vinculaciones")
             charts.mostrar(charts.barras_h(tipos, "Tipo", "Vinculaciones", "Vinculaciones por tipo"), "pa_tipos")
         with c2:
             dist = por_persona.value_counts().sort_index().reset_index()

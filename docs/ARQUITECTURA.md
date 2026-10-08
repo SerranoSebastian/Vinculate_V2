@@ -38,7 +38,7 @@ El mapa y el RIDET dependen de `ridet.view`; cada capa del mapa además exige el
 - Solo llave pública. `config/settings.py` detecta una `service_role`/`sb_secret_…` y **bloquea el arranque**.
 - Cinco intentos fallidos de login → espera de 60 s. La sesión se **revalida** cada pocos segundos (perfil, permisos, equipo), así que un
   cambio del administrador surte efecto sin que la persona vuelva a entrar.
-- Equipo = cookie del navegador `vinculate_device` (UUID) enviada como encabezado `x-device-id`. Ver DESPLIEGUE.md §6.
+- Equipo = UUID `vinculate_device` guardado en el navegador (localStorage + cookie), entregado al servidor por `?dv=` y enviado a Supabase como encabezado `x-device-id`. Ver DESPLIEGUE.md §6.
 
 ## Caché sin datos obsoletos
 

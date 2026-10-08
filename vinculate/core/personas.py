@@ -12,7 +12,8 @@ from .constantes import (
     ALIASES_PERSONAS, PERSONAS_COLS, PERSONAS_COLS_OPCIONALES, PREFIJOS_VINCULACION,
     TIPOS_VINCULACION,
 )
-from .texto import parsear_fechas, texto_vacio
+from .normalizacion import SINONIMOS
+from .texto import normalizar_texto, parsear_fechas, texto_vacio
 from .ubicacion import normalizar_ubicacion_mexico
 
 _COLUMNAS_TEXTO = [
@@ -52,6 +53,15 @@ def siguiente_numero_tipo(serie, prefijo: str) -> int:
     return int(nums.max()) + 1 if nums.notna().any() else 1
 
 
+def _redaccion_sexo(valor: str) -> str:
+    return SINONIMOS.get(normalizar_texto(valor), valor)
+
+
+def _primera_mayuscula(valor: str) -> str:
+    """«superior» → «Superior». No toca el resto (ni siglas ni nombres propios)."""
+    return valor[:1].upper() + valor[1:] if valor and valor[0].islower() else valor
+
+
 def limpiar_personas(df: pd.DataFrame, generar_ids: bool = True) -> pd.DataFrame:
     """Normaliza tipos sin destruir la diferencia entre vacío e 'Indefinido'.
 
@@ -78,6 +88,8 @@ def limpiar_personas(df: pd.DataFrame, generar_ids: bool = True) -> pd.DataFrame
             .str.replace(r"\.0$", "", regex=True)
         )
     df["correo"] = df["correo"].str.lower()
+    df["sexo"] = df["sexo"].map(_redaccion_sexo)          # «MASCULINO», «masculino» → «Masculino»
+    df["escolaridad"] = df["escolaridad"].map(_primera_mayuscula)
     df["municipio"] = df["municipio"].apply(normalizar_ubicacion_mexico)
     # Todo registro histórico representa una vinculación confirmada en el esquema actual.
     df["estatus_vinculacion"] = "Vinculado"

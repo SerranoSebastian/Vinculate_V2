@@ -205,3 +205,13 @@ def test_disponibilidad_manual(estado_sesion):
     disponibilidad.guardar(s, "PER-0001", True, "llamar el lunes")
     estado_sesion.clear()
     assert disponibilidad.disponibles(s) == 1
+
+
+def test_lcc_de_inegi_a_grados():
+    import importlib.util, pathlib
+    spec = importlib.util.spec_from_file_location("pg", pathlib.Path(__file__).resolve().parents[1] / "scripts" / "preparar_geometria.py")
+    m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+    lon, lat = m.lcc_a_grados(2500000.0, 0.0 + m._R0 * 0 + (m._R0 - m._R0))  # origen: lon -102
+    assert abs(lon - (-102.0)) < 1e-6
+    lon, lat = m.lcc_a_grados(2916085.9257, 809553.4553)  # punto de Tlaxcala en el archivo de INEGI
+    assert -99.5 < lon < -97.0 and 19.0 < lat < 20.0

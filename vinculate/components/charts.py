@@ -8,12 +8,13 @@ import streamlit as st
 
 from ..config.theme import ESCALA_SEDECO, PALETA_SEDECO, tema_grafica
 from ..core.constantes import SIN_DATO
+from ..core.normalizacion import unificar_variantes
 
 CONFIG = {"displayModeBar": False, "responsive": True}
 
 
 def _conteo(serie: pd.Series, etiqueta: str, columna: str, top: int | None = None, vacio: str = SIN_DATO) -> pd.DataFrame:
-    s = serie.fillna("").astype(str).str.strip()
+    s = unificar_variantes(serie)  # «MASCULINO» y «Masculino» se cuentan juntos (solo al dibujar; los datos no cambian)
     s = s.mask(s.str.lower().isin(["", "nan", "none", "nat"]), vacio)
     c = s.value_counts()
     if top:

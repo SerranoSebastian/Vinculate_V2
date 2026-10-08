@@ -43,6 +43,7 @@ En *SQL Editor* ejecuta cada archivo de `supabase/migrations/`, uno por uno, esp
 | 5 | `V005_origen_del_dato.sql` | Etiqueta como «imputado»/«balanceado» los 534 años y 259 instituciones asignados por procesos de limpieza (Camino A). En Camino B no cambia nada. |
 | 6 | `V007_vigencia_vacantes.sql` | Columna `fecha_cierre` en vacantes. |
 | 7 | `V008_disponibilidad_personas.sql` | Tabla de disponibilidad manual por persona. |
+| 8 | `V009_unificar_redaccion.sql` | *(Opcional, modifica datos con respaldo.)* Unifica «MASCULINO/masculino» → «Masculino», etc. Lee antes MIGRACIONES.md. |
 
 (No existe V006: se difirió a propósito; ver `docs/DECISIONES_Y_CAMBIOS.md`.)
 Detalle, verificación y rollback de cada una: [MIGRACIONES.md](MIGRACIONES.md).
@@ -114,8 +115,9 @@ Cuando todo lo anterior esté probado:
 ## 6. Equipos (computadoras): cómo funciona
 
 Igual que en la v5, **cada colaborador** (los administradores no) necesita que su equipo esté autorizado. Como en Streamlit Cloud el
-servidor es uno solo, el identificador del equipo ya no es un archivo del servidor sino una **cookie del navegador**
-(`vinculate_device`, aleatoria, ~5 años). Consecuencias prácticas:
+servidor es uno solo, el identificador del equipo ya no es un archivo del servidor sino un **código aleatorio guardado en el navegador**
+(`vinculate_device`, en localStorage y cookie). Al abrir la app, un script lo entrega al servidor en la URL (`?dv=…`, se borra al instante); así no depende
+de que el servidor reciba cookies. Si el navegador no puede entregarlo, hay un botón «Continuar sin identificar este equipo» (queda como pendiente). Consecuencias prácticas:
 
 - La primera vez que un colaborador entra desde un navegador nuevo, el equipo queda **registrado como pendiente** y la app le avisa;
   un administrador lo habilita en *Administración → 💻 Computadoras*. Otro navegador o borrar cookies = equipo nuevo.

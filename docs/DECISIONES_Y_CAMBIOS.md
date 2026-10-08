@@ -5,7 +5,7 @@
 | # | Decisión | Cómo quedó |
 |---|---|---|
 | D1 | Aplicar V001 (cierre de brechas) | Entregada como archivo. Se prueba primero en un proyecto de **prueba** y luego en el real; la ejecuta una persona, nunca la app. |
-| D2 | Servidor compartido (Streamlit Cloud) | El identificador de equipo vive en una **cookie del navegador** y se valida en RLS (V002, opcional y apagado por defecto). Control suave. |
+| D2 | Servidor compartido (Streamlit Cloud) | El identificador de equipo vive en el **navegador** (localStorage/cookie, entregado por URL) y se valida en RLS (V002, opcional y apagado por defecto). Control suave. |
 | D3 | «Disponible para vincular» | **Marca manual** por persona (V008). Hasta que alguien marque personas, el indicador dice «No disponible». |
 | D4 | Vigencia de vacantes | `fecha_cierre` (V007): vigente = «Activa» y sin cierre vencido. Las «Activa» de 2024 se revisan a mano en *Vacantes → Revisión de vigencia*; nada cambia solo. |
 | D5 | Años e instituciones asignados por limpieza | Se **conservan** (534 años imputados, 259 instituciones balanceadas) pero **etiquetados** (V005), con interruptor «solo años registrados». |
@@ -22,14 +22,15 @@
 3. **Deshacer** la última carga disponible dentro de la sesión (borra exactamente lo insertado, con confirmación).
 4. **Permisos:** cualquier acción exige también `view` del mismo módulo (no se puede crear lo que no se ve). Un usuario con `create/edit` sin `view` quedaría sin acceso útil; la matriz lo impide al guardar.
 5. **Mapa y RIDET** requieren `ridet.view`; cada capa del mapa exige además el permiso de sus datos.
-6. **Equipos:** cookie del navegador en vez de archivo local (ver DESPLIEGUE.md §6). Un navegador nuevo de un colaborador queda «pendiente» hasta que un administrador lo autoriza.
+6. **Equipos:** identificador guardado en el navegador en vez de archivo local (ver DESPLIEGUE.md §6). Un navegador nuevo de un colaborador queda «pendiente» hasta que un administrador lo autoriza.
 7. **Bloqueo de login:** 5 intentos fallidos → 60 s de espera (por sesión de navegador).
-8. **Interfaz:** navegación lateral por secciones, búsqueda global, centro de avisos, componentes unificados. Mismos módulos y mismos nombres de tablas/columnas.
+8. **Gráficas (08/10/2026):** en las gráficas de tipo de vinculación, «Prácticas profesionales» + «Servicio social» se muestran juntas y «Atención» + «Inserción laboral» también; las tablas, filtros, fichas y exportaciones conservan los cuatro tipos. Las gráficas cuentan juntas las variantes de redacción («MASCULINO»/«Masculino»); los datos solo se corrigen con V009 (opcional) o al cargar archivos nuevos.
+9. **Interfaz:** navegación lateral por secciones, búsqueda global, centro de avisos, componentes unificados. Mismos módulos y mismos nombres de tablas/columnas.
 
 ## 3. Lo que NO se hizo y por qué
 
 - **V006 (vistas SQL):** diferida; ver MIGRACIONES.md.
-- **Mapa dibujado:** requiere la geometría oficial de INEGI, que no se pudo descargar desde el entorno donde se construyó el proyecto. Está **todo listo**
+- **Mapa dibujado (resuelto el 07/10/2026):** `geo/tlaxcala_municipios.geojson` se generó del AGEM 2026 de INEGI. Antes requería la geometría oficial de INEGI, que no se pudo descargar desde el entorno donde se construyó el proyecto. Está **todo listo**
   (validación estricta + `scripts/preparar_geometria.py` + `geo/LEEME.md`); mientras no esté el archivo, se muestra el ranking con los mismos datos.
 - **Geocodificación:** no se hizo ni se hará de forma masiva (no hay coordenadas inventadas; la ubicación es por municipio).
 - **Municipio y parque industrial de las 307 empresas del RIDET:** no se infieren automáticamente (el PDF es ambiguo en ese punto); solo la **región**, que sí es confiable.
@@ -52,5 +53,4 @@
 4. **RIDET:** revisar la extracción (307 empresas; por región: Centro-Sur 82, Sur 78, Centro-Norte 75, Oriente 39, Norte 20, Poniente 13) y las **5 empresas con vacantes
    sin municipio** (UMÁ RM3, EC Grupo San Luis, Stripseel, DDEQSA, MJCR). Confirmar con quien elaboró el RIDET el caso **Altzayanca**: el encabezado de Oriente dice
    «7 municipios» y no lo nombra, pero el cuerpo le asigna zona, empresa y planteles; aquí se cuenta en Oriente para que los 60 municipios queden en una región.
-5. **Geometría de INEGI** para activar el mapa dibujado (`geo/LEEME.md`).
 6. **Versión de Streamlit en producción:** el proyecto declara `streamlit>=1.52,<2` (probado en 1.52 y 1.65).

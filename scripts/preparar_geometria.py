@@ -20,11 +20,58 @@ No requiere librerías externas.
 from __future__ import annotations
 
 import json
+import math
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from vinculate.core.mapa import ENTIDAD_TLAXCALA, validar_geojson  # noqa: E402
+
+
+# Proyección oficial del MG de INEGI: Cónica Conforme de Lambert, paralelos 17.5° y 29.5°, origen 12°N 102°W,
+# falso este 2 500 000 m, elipsoide GRS80 (ITRF2008/ITRF92). Salida: grados (WGS84, equivalente a esta escala).
+_A, _F = 6378137.0, 1 / 298.257222101
+_E = math.sqrt(2 * _F - _F * _F)
+
+
+def _m(phi):
+    return math.cos(phi) / math.sqrt(1 - (_E * math.sin(phi)) ** 2)
+
+
+def _t(phi):
+    s = math.sin(phi)
+    return math.tan(math.pi / 4 - phi / 2) / (((1 - _E * s) / (1 + _E * s)) ** (_E / 2))
+
+
+_P1, _P2, _P0, _L0 = (math.radians(x) for x in (17.5, 29.5, 12.0, -102.0))
+_N = (math.log(_m(_P1)) - math.log(_m(_P2))) / (math.log(_t(_P1)) - math.log(_t(_P2)))
+_FF = _m(_P1) / (_N * _t(_P1) ** _N)
+_R0 = _A * _FF * _t(_P0) ** _N
+
+
+def lcc_a_grados(x: float, y: float) -> tuple[float, float]:
+    xx, yy = x - 2500000.0, _R0 - y
+    rho = math.copysign(math.hypot(xx, yy), _N)
+    t = (rho / (_A * _FF)) ** (1 / _N)
+    theta = math.atan2(xx, yy)
+    phi = math.pi / 2 - 2 * math.atan(t)
+    for _ in range(8):
+        s = math.sin(phi)
+        phi = math.pi / 2 - 2 * math.atan(t * ((1 - _E * s) / (1 + _E * s)) ** (_E / 2))
+    return math.degrees(theta / _N + _L0), math.degrees(phi)
+
+
+def _a_grados(coords):
+    if isinstance(coords[0], (int, float)):
+        lon, lat = lcc_a_grados(coords[0], coords[1])
+        return [lon, lat]
+    return [_a_grados(c) for c in coords]
+
+
+def _primer_punto(coords):
+    while isinstance(coords[0], list):
+        coords = coords[0]
+    return coords
 
 
 def _redondear(coords, d: int):
@@ -81,6 +128,8 @@ def main(argv: list[str]) -> int:
             continue
         g = ft.get("geometry") or {}
         if g.get("coordinates"):
+            if abs(_primer_punto(g["coordinates"])[0]) > 360:  # metros (proyección de INEGI): se convierten a grados
+                g = {**g, "coordinates": _a_grados(g["coordinates"])}
             g = {**g, "coordinates": _redondear(g["coordinates"], decimales)}
         feats.append({**ft, "geometry": g})
     res = validar_geojson({"type": "FeatureCollection", "features": feats})

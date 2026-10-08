@@ -5,6 +5,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from ..config.theme import PALETA_SEDECO, tema_grafica
+from ..core.normalizacion import agrupar_tipo_vinculacion
 from . import charts
 
 
@@ -51,5 +52,5 @@ def evolucion_anual(pf: pd.DataFrame, clave: str) -> bool:
 
 
 def tipos_vinculacion(pf: pd.DataFrame, clave: str) -> None:
-    d = charts.conteo(pf["vinculacion"], "Tipo", "Vinculaciones")
+    d = charts.conteo(agrupar_tipo_vinculacion(pf["vinculacion"]), "Tipo", "Vinculaciones")
     charts.mostrar(charts.dona(d, "Tipo", "Vinculaciones", "Vinculaciones por tipo", 380), clave)

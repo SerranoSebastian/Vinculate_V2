@@ -739,6 +739,55 @@ class TestV008:
             _drop_db(db)
 
 
+class TestV009:
+    def _db(self, nombre, extra):
+        db = _build(nombre, MIGS_1A3)
+        with _connect(db) as conn:
+            conn.execute("update public.personas set sexo='MASCULINO', escolaridad='superior' where id_persona='I-00001-00001'")
+            conn.execute("update public.personas set sexo='mujer' where id_persona='P-00001-00002'")
+            conn.execute("update public.personas set sexo='Otro', escolaridad='' where id_persona='A-00001-00003'")
+        self.auditoria_previa = scalar(db, "select count(*) from public.app_audit_log where action='srv_update'")
+        for f in extra:
+            _run_file(db, MIG / f)
+        return db
+
+    def test_unifica_y_respalda_y_no_toca_lo_demas(self):
+        db = self._db("v9", ["V009_unificar_redaccion.sql"])
+        try:
+            assert scalar(db, "select sexo from public.personas where id_persona='I-00001-00001'") == "Masculino"
+            assert scalar(db, "select escolaridad from public.personas where id_persona='I-00001-00001'") == "Superior"
+            assert scalar(db, "select sexo from public.personas where id_persona='P-00001-00002'") == "Femenino"
+            assert scalar(db, "select sexo from public.personas where id_persona='A-00001-00003'") == "Otro"   # otro valor: intacto
+            n = scalar(db, "select count(*) from public.respaldo_v009_redaccion")
+            assert n >= 3     # las 3 filas preparadas aquí (+ lo que traiga el seed sintético)
+            assert scalar(db, "select count(*) from public.app_audit_log where action='migration_V009'") == 1
+            assert scalar(db, "select count(*) from public.app_audit_log where action='srv_update'") == self.auditoria_previa  # sin ruido por fila
+            _run_file(db, MIG / "V009_unificar_redaccion.sql")        # idempotente
+            assert scalar(db, "select count(*) from public.respaldo_v009_redaccion") == n
+        finally:
+            _drop_db(db)
+
+    def test_rollback_restaura_los_valores_originales(self):
+        db = self._db("v9rb", ["V009_unificar_redaccion.sql", "V009_rollback.sql"])
+        try:
+            assert scalar(db, "select sexo from public.personas where id_persona='I-00001-00001'") == "MASCULINO"
+            assert scalar(db, "select escolaridad from public.personas where id_persona='I-00001-00001'") == "superior"
+            assert scalar(db, "select sexo from public.personas where id_persona='P-00001-00002'") == "mujer"
+        finally:
+            _drop_db(db)
+
+    def test_respaldo_solo_para_administradores(self):
+        db = self._db("v9rls", ["V009_unificar_redaccion.sql"])
+        try:
+            with as_user(db, LECTOR) as cur:
+                cur.execute("select count(*) from public.respaldo_v009_redaccion")
+                assert cur.fetchone()[0] == 0
+            with as_user(db, role="anon") as cur:
+                assert "permission denied" in (_err(cur, "select count(*) from public.respaldo_v009_redaccion") or "")
+        finally:
+            _drop_db(db)
+
+
 class TestCadenaCompleta:
     def test_aplicar_todo_y_revertir_todo_deja_la_base_como_estaba(self):
         db = _build("cadena", MIGS_1A3 + MIGS_4A8 + ["V008_rollback.sql", "V007_rollback.sql", "V005_rollback.sql", "V004_rollback.sql"])

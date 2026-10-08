@@ -1,7 +1,7 @@
 # Geometría de los municipios (para el mapa dibujado)
 
 Aquí va **un solo archivo**: `tlaxcala_municipios.geojson` (los 60 municipios de Tlaxcala, entidad 29 de INEGI).
-Mientras no exista, el Mapa territorial muestra el ranking por municipio con los mismos datos y las instrucciones
+(Ya incluido: generado del archivo AGEM 2026 de INEGI, 60 municipios.) Si no existiera, el Mapa territorial muestra el ranking por municipio con los mismos datos y las instrucciones
 para activarlo; nada se rompe.
 
 Cómo generarlo (una sola vez):
@@ -10,6 +10,7 @@ Cómo generarlo (una sola vez):
    conviértela a GeoJSON (QGIS «Exportar → GeoJSON», o arrastra el .shp a https://mapshaper.org y exporta GeoJSON;
    ahí mismo puedes simplificar al 10 %).
 2. `python scripts/preparar_geometria.py ARCHIVO.geojson`
+   - Si el archivo viene en metros (proyección Lambert de INEGI), lo convierte a grados.
    - Se queda solo con la entidad 29, exige **exactamente 60 municipios** y compara cada nombre con el catálogo de la app.
    - Si algo no coincide, lista los problemas y **no escribe nada**.
    - Si todo coincide escribe `geo/tlaxcala_municipios.geojson` y `geo/cve_mun_municipios.sql`.
