@@ -96,7 +96,7 @@ def asegurar_dispositivo() -> str:
     if st.query_params.get(PARAM_RECARGA) == "1":
         st.error(
             "Tu navegador no permite guardar cookies, y Vincúlate las necesita para identificar este equipo. "
-            "Habilita las cookies para este sitio (o sal del modo incógnito) y recarga la página."
+            "Habilita las cookies para este sitio (o sal del modo incógnito) y recarga la página. "
         )
         st.stop()
 
