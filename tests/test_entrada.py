@@ -122,3 +122,32 @@ def test_bloqueo_tras_cinco_intentos(app):
         at.button[0].click().run()
     assert any("Demasiados intentos" in w.value for w in at.warning)
     assert not at.text_input
+
+
+def test_equipo_sin_id_pide_al_navegador_y_ofrece_salida(app):
+    at = app(_cliente())
+    del at.session_state["_device_id_forzado"]
+    at.run()
+    assert not at.exception
+    assert not at.text_input  # aún no hay login: primero se identifica el equipo
+    assert any("Preparando este equipo" in c.value for c in at.caption)
+    at.button(key="_dv_continuar").click().run()
+    assert at.text_input  # con el ID de sesión ya aparece el login
+
+
+def test_equipo_toma_el_id_de_la_url(app):
+    at = app(_cliente())
+    del at.session_state["_device_id_forzado"]
+    at.query_params["dv"] = DEVICE
+    at.run()
+    assert not at.exception and at.text_input
+    assert at.session_state["_device_id"] == DEVICE
+    assert "dv" not in at.query_params
+
+
+def test_id_invalido_en_la_url_se_ignora(app):
+    at = app(_cliente())
+    del at.session_state["_device_id_forzado"]
+    at.query_params["dv"] = "no-es-un-uuid"
+    at.run()
+    assert not at.exception and not at.text_input
