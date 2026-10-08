@@ -18,8 +18,8 @@ SINONIMOS = {
 }
 
 # Agrupación visual del tipo de vinculación (los datos conservan los cuatro tipos).
-GRUPO_FORMACION = "Prácticas profesionales y servicio social"
-GRUPO_ATENCION = "Atención e inserción laboral"
+GRUPO_FORMACION = "Inserción Educativa"
+GRUPO_ATENCION = "Inserción laboral"
 GRUPOS_VISUALES = {
     "practicas profesionales": GRUPO_FORMACION,
     "servicio social": GRUPO_FORMACION,
