@@ -24,6 +24,7 @@ ALIAS_GEO = {
     "yauhquemehcan": "YAUHQUEMECAN",
     "atltzayanca": "ALTZAYANCA",
     "ziltlaltepec": "ZITLALTEPEC DE TRINIDAD SÁNCHEZ SANTOS",
+    "ziltlaltepec de trinidad sanchez santos": "ZITLALTEPEC DE TRINIDAD SÁNCHEZ SANTOS",
     "zitlaltepec": "ZITLALTEPEC DE TRINIDAD SÁNCHEZ SANTOS",
     "ixtacuixtla": "IXTACUIXTLA DE MARIANO MATAMOROS",
 }
