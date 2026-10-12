@@ -10,6 +10,7 @@ import streamlit as st
 
 from ..auth.sesion import Sesion
 from ..core.constantes import SIN_DATO
+from ..core.normalizacion import es_nulo
 from ..core.texto import texto_vacio
 from ..repositories.errores import ErrorDatos, SesionExpirada
 from ..services import respaldos
@@ -99,7 +100,7 @@ def _texto_fecha(v) -> str:
 
 def preparar_tabla(df: pd.DataFrame, columnas: list[str] | None = None, nombres: dict[str, str] | None = None,
                    fechas: tuple[str, ...] = ()) -> pd.DataFrame:
-    """Copia lista para mostrar: sin NaN/None/NaT (se escribe «Información no disponible»)."""
+    """Copia lista para mostrar: sin NaN/None/NaT (se escribe la etiqueta única de dato faltante)."""
     d = df[[c for c in (columnas or list(df.columns)) if c in df.columns]].copy()
     for c in d.columns:
         if c in fechas or pd.api.types.is_datetime64_any_dtype(d[c]):
@@ -107,7 +108,7 @@ def preparar_tabla(df: pd.DataFrame, columnas: list[str] | None = None, nombres:
         elif pd.api.types.is_numeric_dtype(d[c]) and not d[c].isna().any():
             continue
         else:
-            d[c] = d[c].map(lambda v: SIN_DATO if texto_vacio(v) else (str(int(v)) if isinstance(v, float) and v.is_integer() else str(v)))
+            d[c] = d[c].map(lambda v: SIN_DATO if (texto_vacio(v) or es_nulo(v)) else (str(int(v)) if isinstance(v, float) and v.is_integer() else str(v)))
     return d.rename(columns=nombres or {})
 
 

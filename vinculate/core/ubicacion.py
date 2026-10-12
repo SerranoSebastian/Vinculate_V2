@@ -34,7 +34,7 @@ ESTADOS_MEXICO_SIN_TLAXCALA = [
 ]
 
 OPCIONES_UBICACION_CAPTURA = [""] + MUNICIPIOS_TLAXCALA + ESTADOS_MEXICO_SIN_TLAXCALA + ["Indefinido"]
-OPCIONES_UBICACION_FILTRO = MUNICIPIOS_TLAXCALA + ESTADOS_MEXICO_SIN_TLAXCALA + ["Otro Estado", "Indefinido", "Sin dato"]
+OPCIONES_UBICACION_FILTRO = MUNICIPIOS_TLAXCALA + ESTADOS_MEXICO_SIN_TLAXCALA + ["Otro Estado", "Indefinido"]
 
 _MAPA_CATALOGO = {normalizar_texto(x): x for x in MUNICIPIOS_TLAXCALA + ESTADOS_MEXICO_SIN_TLAXCALA}
 _ALIASES = {
@@ -58,7 +58,7 @@ def normalizar_ubicacion_mexico(valor) -> str:
         return ""
     original = str(valor).strip()
     key = normalizar_texto(original)
-    if key == "indefinido":
+    if key in ("indefinido", "sin dato", "sin datos", "sin informacion", "informacion no disponible", "no disponible"):
         return "Indefinido"
     if key == "otro estado":
         return "Otro Estado"

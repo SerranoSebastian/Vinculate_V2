@@ -6,7 +6,8 @@ from dataclasses import dataclass, field
 import pandas as pd
 import streamlit as st
 
-from ..core.constantes import ESTADOS_VACANTE, SIN_DATO, TIPOS_OPORTUNIDAD
+from ..core.constantes import ESTADOS_VACANTE, TIPOS_OPORTUNIDAD
+from ..core.normalizacion import homologar_nulos
 from ..core.ubicacion import OPCIONES_UBICACION_FILTRO
 
 CLAVES = ("fi_anios", "fi_municipios", "fi_tipos", "fi_sexos", "fi_oportunidad", "fi_estados", "fi_solo_registrados")
@@ -42,8 +43,7 @@ class FiltrosInicio:
 
 
 def _vals(serie: pd.Series) -> list[str]:
-    s = serie.fillna("").astype(str).str.strip()
-    return sorted({SIN_DATO if v == "" else v for v in s})
+    return sorted(set(homologar_nulos(serie.fillna("").astype(str).str.strip())))
 
 
 def _limpiar() -> None:
@@ -88,11 +88,11 @@ def aplicar_personas(df: pd.DataFrame, f: FiltrosInicio) -> pd.DataFrame:
     if f.anios:
         df = df[df["año"].isin(f.anios)]
     if f.municipios:
-        df = df[df["municipio"].replace("", SIN_DATO).isin(f.municipios)]
+        df = df[homologar_nulos(df["municipio"]).isin(f.municipios)]
     if f.tipos:
-        df = df[df["vinculacion"].replace("", SIN_DATO).isin(f.tipos)]
+        df = df[homologar_nulos(df["vinculacion"]).isin(f.tipos)]
     if f.sexos:
-        df = df[df["sexo"].replace("", SIN_DATO).isin(f.sexos)]
+        df = df[homologar_nulos(df["sexo"]).isin(f.sexos)]
     if f.solo_registrados and "anio_fuente" in df.columns:
         df = df[df["anio_fuente"].ne("imputado")]
     return df

@@ -8,6 +8,7 @@ from .. import navegacion
 from ..auth.sesion import Sesion, actual
 from ..components import ui
 from ..core.constantes import SIN_DATO
+from ..core.normalizacion import es_nulo
 from ..core.texto import fecha_visible, texto_vacio, visible
 from ..repositories.errores import ErrorDatos
 from ..services import datos, disponibilidad
@@ -16,7 +17,7 @@ CAMPOS_PERFIL = [("sexo", "Sexo"), ("edad", "Edad"), ("municipio", "Municipio / 
                  ("carrera", "Carrera"), ("area_carrera", "Área de carrera"), ("Institución", "Institución"),
                  ("grupo_prioritario", "Grupo prioritario"), ("telefono", "Teléfono"), ("correo", "Correo")]
 CAMPOS_CALIDAD = ["telefono", "correo", "municipio", "carrera", "Institución", "escolaridad", "sexo", "edad"]
-_NO_DEFINIDO = {"", "indefinido", "nan", "none"}
+
 
 
 def _faltantes(fila) -> list[str]:
@@ -24,7 +25,7 @@ def _faltantes(fila) -> list[str]:
     out = []
     for c in CAMPOS_CALIDAD:
         v = fila.get(c)
-        if texto_vacio(v) or str(v).strip().lower() in _NO_DEFINIDO:
+        if texto_vacio(v) or es_nulo(v):
             out.append(nombres[c])
     return out
 
@@ -111,10 +112,10 @@ def contenido(sesion: Sesion, id_maestro: str) -> None:
                      fechas=("fecha_vinculacion", "fecha_colocacion"))
     with t4:
         if faltan:
-            st.warning("Información no disponible en: " + ", ".join(faltan))
+            st.warning("Falta información en: " + ", ".join(faltan))
         else:
             st.success("Todos los campos clave de contacto y perfil están capturados.")
-        ui.nota("«Indefinido» se cuenta como dato incompleto. Nada se rellena automáticamente.")
+        ui.nota(f"«{SIN_DATO}», «Sin información» y los campos vacíos cuentan como dato incompleto. Nada se rellena automáticamente.")
 
     st.divider()
     a, b, c3 = st.columns(3)
@@ -142,7 +143,7 @@ def _bloque_disponibilidad(sesion: Sesion, id_maestro: str) -> None:
     nota_v = "" if fila.empty or texto_vacio(fila.iloc[0]["nota"]) else str(fila.iloc[0]["nota"])
     st.markdown("**Disponibilidad para ser vinculada** (marca manual)")
     if fila.empty:
-        ui.nota("Sin marcar: Información no disponible.")
+        ui.nota(f"Sin marcar: {SIN_DATO}.")
     if sesion.puede("personas", "edit"):
         nuevo = st.toggle("Disponible para vinculación", value=actual_v, key=f"disp_{id_maestro}")
         texto = st.text_input("Nota (opcional)", value=nota_v, key=f"dispn_{id_maestro}", max_chars=200)

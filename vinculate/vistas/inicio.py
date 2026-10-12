@@ -7,6 +7,7 @@ import streamlit as st
 from ..auth.sesion import Sesion, actual
 from ..components import charts, filtros, paneles, ui
 from ..core.constantes import SIN_DATO
+from ..core.normalizacion import homologar_nulos, unificar_variantes
 from ..core.personas import obtener_personas_maestras
 from ..core.vacantes import clasificar_vigencia, tiene_vigencia, vigentes_mask
 from ..repositories.errores import ErrorDatos
@@ -189,7 +190,7 @@ def render() -> None:
                     ui.nota(f"{n_b} registro(s) tienen la institución asignada por una corrección de balanceo (no capturada por la persona).")
                 ui.explicacion("Una fila por persona maestra, con su dato más reciente y completo.",
                                "Distribuye personas únicas por municipio, institución, carrera y sexo.",
-                               "«Información no disponible» agrupa a quienes no tienen ese dato. Haz clic en una barra para ver quiénes son.")
+                               f"«{SIN_DATO}» agrupa a quienes no tienen ese dato. Haz clic en una barra para ver quiénes son.")
 
     if vf is not None:
         with tabs["Vacantes"]:
@@ -245,7 +246,7 @@ def render() -> None:
             if campo == "empresa" and vf is not None:
                 _detalle_vacantes(titulo, vf[vf["Empresa"].eq(valor)], f"emp_{n_sel}")
             elif maestras_f is not None:
-                col = maestras_f[campo].fillna("").astype(str).str.strip()
-                vacio = col.str.lower().isin(["", "nan", "none", "nat"])
-                base = maestras_f[vacio] if valor == SIN_DATO else maestras_f[col.eq(valor)]
+                # Misma regla que la gráfica: variantes de redacción y «sin dato» ya unificadas.
+                col = homologar_nulos(unificar_variantes(maestras_f[campo]), SIN_DATO)
+                base = maestras_f[col.eq(valor)]
                 _detalle_personas(titulo, base, f"{campo}_{n_sel}")

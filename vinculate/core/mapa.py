@@ -148,7 +148,7 @@ def clasificar_ubicacion(valor) -> tuple[str, str]:
         return "sin_dato", ""
     canon = normalizar_ubicacion_mexico(valor)
     n = normalizar_texto(canon)
-    if n in ("indefinido", "sin dato", "informacion no disponible"):
+    if n in ("indefinido", "sin dato", "sin informacion", "informacion no disponible"):
         return "sin_dato", ""
     if canon in MUNICIPIOS_TLAXCALA:
         return "municipio", canon

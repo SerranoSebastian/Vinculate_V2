@@ -158,7 +158,7 @@ CARRERAS_AMPLIADAS = [
     # Posgrados / registros genéricos conservables
     "Maestría en Impuestos", "Maestría en Ingeniería Administrativa", "Maestría en Ingeniería Mecatrónica",
     "Maestría en Sistemas Computacionales", "Maestría en Energías Renovables", "Doctorado en Ciencias de la Ingeniería",
-    "Indefinido", "Sin Información",
+    "Indefinido",
 ]
 
 AREAS_CARRERA_AMPLIADAS = [
@@ -170,7 +170,7 @@ AREAS_CARRERA_AMPLIADAS = [
     "Agropecuaria y Forestal", "Salud", "Veterinaria", "Psicología", "Educación",
     "Ciencias Sociales", "Derecho y Seguridad", "Arquitectura y Construcción", "Diseño y Artes",
     "Comunicación y Medios", "Textil y Confección", "Turismo y Gastronomía", "Seguridad Ocupacional",
-    "Nivel educativo", "Sin área específica", "Sin Información", "Indefinido",
+    "Nivel educativo", "Sin área específica", "Indefinido",
 ]
 
 

@@ -16,6 +16,7 @@ from ..components import charts, ui
 from ..config.settings import GEO
 from ..config.theme import ESCALA_SEDECO, tema_grafica
 from ..core import mapa as nucleo
+from ..core.constantes import SIN_DATO
 from ..core.ridet import region_de_municipio
 from ..core.texto import normalizar_texto
 from ..repositories.errores import ErrorDatos
@@ -182,7 +183,7 @@ def render() -> None:
         st.markdown(f"#### {elegido.title()}")
         col_mun = "municipio" if capa in ("personas", "historicos") else "_municipio"
         filas = detalle[detalle[col_mun].map(lambda v: nucleo.clasificar_ubicacion(v)[1]).eq(elegido)]
-        ui.nota(f"{len(filas)} registro(s) · Región RIDET: {region_de_municipio(elegido) or 'Información no disponible'}")
+        ui.nota(f"{len(filas)} registro(s) · Región RIDET: {region_de_municipio(elegido) or SIN_DATO}")
         idx = ui.tabla(filas.reset_index(drop=True), cols, altura=300, key=f"mapa_det_{capa}", seleccionable=capa == "personas")
         if idx is not None and capa == "personas":
             fila = filas.reset_index(drop=True).iloc[idx]

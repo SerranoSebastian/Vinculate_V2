@@ -15,7 +15,7 @@ from ..core.catalogos_academicos import (
     escolaridad_canonica, grupo_canonico, opcion_canonica,
 )
 from ..core.constantes import PERSONAS_COLS, SIN_DATO, TIPOS_VINCULACION
-from ..core.normalizacion import agrupar_tipo_vinculacion
+from ..core.normalizacion import agrupar_tipo_vinculacion, homologar_nulos
 from ..core.personas import obtener_personas_maestras, resumen_vinculaciones_por_persona
 from ..core.texto import normalizar_texto, texto_vacio
 from ..core.ubicacion import MUNICIPIOS_TLAXCALA, OPCIONES_UBICACION_FILTRO, normalizar_ubicacion_mexico, opciones_ubicacion
@@ -108,8 +108,7 @@ def _formulario(prefijo: str, base: dict, df: pd.DataFrame) -> dict:
 # ------------------------------------------------------------------- análisis
 def _filtros_analisis(df: pd.DataFrame) -> pd.DataFrame:
     def vis(serie):
-        s = serie.fillna("").astype(str).str.strip()
-        return s.mask(s.eq(""), SIN_DATO)
+        return homologar_nulos(serie.fillna("").astype(str).str.strip())
 
     out = df
     with st.expander("🎛️ Filtros", expanded=False):

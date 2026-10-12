@@ -44,6 +44,7 @@ En *SQL Editor* ejecuta cada archivo de `supabase/migrations/`, uno por uno, esp
 | 6 | `V007_vigencia_vacantes.sql` | Columna `fecha_cierre` en vacantes. |
 | 7 | `V008_disponibilidad_personas.sql` | Tabla de disponibilidad manual por persona. |
 | 8 | `V009_unificar_redaccion.sql` | *(Opcional, modifica datos con respaldo.)* Unifica «MASCULINO/masculino» → «Masculino», etc. Lee antes MIGRACIONES.md. |
+| 9 | `V010_unificar_sin_dato.sql` | *(Opcional, modifica datos con respaldo.)* Unifica «Sin información / Sin dato / indefinido» → «Indefinido». |
 
 (No existe V006: se difirió a propósito; ver `docs/DECISIONES_Y_CAMBIOS.md`.)
 Detalle, verificación y rollback de cada una: [MIGRACIONES.md](MIGRACIONES.md).

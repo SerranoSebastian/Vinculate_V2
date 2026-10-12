@@ -3,7 +3,8 @@ from __future__ import annotations
 
 # Texto único para todo dato faltante que se muestre al usuario. Nunca se
 # muestra NaN, None, <NA> ni NaT.
-SIN_DATO = "Información no disponible"
+# Etiqueta ÚNICA para cualquier dato faltante (vacío, «Indefinido», «Sin información», «Sin dato»…). Cambiarla aquí la cambia en todo.
+SIN_DATO = "Indefinido"
 
 # Módulos y acciones del modelo de permisos (idéntico al de la base de datos).
 MODULES = {

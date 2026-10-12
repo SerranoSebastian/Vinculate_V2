@@ -3,12 +3,12 @@
 Reglas que cumplen **todas**: no borran ni renombran tablas, columnas ni IDs existentes · no cambian ni inventan datos
 (salvo lo que se indica expresamente en V005, que solo *etiqueta*) · van dentro de una transacción (si falla, no queda nada a medias) ·
 son re-ejecutables sin duplicar nada · tienen un `_rollback.sql` · están probadas contra un PostgreSQL real
-(`tests/test_sql_migraciones.py`, 77 pruebas).
+(`tests/test_sql_migraciones.py`, 80 pruebas).
 
 **Cómo se ejecutan:** a mano, en *Supabase → SQL Editor*, **primero en un proyecto de prueba**. La app solo *lee* qué migraciones
 están aplicadas (*Administración → Estado del sistema*) y funciona, con menos funciones, si falta alguna de las opcionales (V004, V005, V007, V008).
 
-Orden de aplicación: **V001 → V002 → V003 → V004 → V005 → V007 → V008 → V009**. Orden de reversión: el inverso.
+Orden de aplicación: **V001 → V002 → V003 → V004 → V005 → V007 → V008 → V009 → V010**. Orden de reversión: el inverso.
 Dependencias: V003 y V008 requieren V002 (la migración se detiene con un mensaje claro si falta).
 
 ---
@@ -84,6 +84,12 @@ Antes de cada cambio copia el valor original a `respaldo_v009_redaccion` (solo a
 La app **ya unifica estas variantes al dibujar gráficas** y al cargar archivos nuevos, así que V009 solo sirve para dejar también *la base* limpia.
 **Revertir:** `V009_rollback.sql` (devuelve cada valor al original; respeta lo que alguien haya corregido después).
 
+## V010 — Unificar «sin dato» en la base  *(opcional; corrige datos)*
+La base guarda «no hay dato» de varias formas (`indefinido`, `Indefinido`, `Sin Información`, `Sin Dato`, `N/A`…). V010 deja una sola: `Indefinido`, en
+`personas` (sexo, escolaridad, carrera, institución, municipio, área de carrera, grupo prioritario, teléfono, correo) y `vacantes.sector_empresa`.
+No toca celdas vacías/NULL, IDs, nombres ni fechas. Respaldo en `respaldo_v010_sin_dato` (solo administradores), re-ejecutable, una sola fila de auditoría.
+La app **ya muestra «Indefinido» para todas esas formas** aunque no la ejecutes. **Revertir:** `V010_rollback.sql`.
+
 ---
 
 ## V006 — diferida
@@ -92,5 +98,5 @@ los datos que ya lee con RLS, y una vista añade superficie de seguridad (las vi
 `security_invoker`). Se retoma si el volumen lo justifica.
 
 ## Si necesitas deshacer todo
-Ejecuta los `_rollback.sql` en este orden: **V009 → V008 → V007 → V005 → V004 → V003 → V002 → V001**. Antes, respalda lo que se capturó después de aplicarlas
+Ejecuta los `_rollback.sql` en este orden: **V010 → V009 → V008 → V007 → V005 → V004 → V003 → V002 → V001**. Antes, respalda lo que se capturó después de aplicarlas
 (los archivos indican cómo). V001_rollback reabre las brechas de seguridad: solo como emergencia.

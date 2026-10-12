@@ -788,6 +788,63 @@ class TestV009:
             _drop_db(db)
 
 
+class TestV010:
+    def _db(self, nombre, extra):
+        db = _build(nombre, MIGS_1A3)
+        with _connect(db) as conn:
+            conn.execute("update public.personas set carrera='indefinido', municipio='Sin Información', escolaridad='Sin Dato' where id_persona='I-00001-00001'")
+            conn.execute("update public.personas set carrera='Derecho', municipio='  INDEFINIDO ', telefono='' where id_persona='P-00001-00002'")
+            conn.execute("update public.personas set carrera=null, area_carrera='Indefinido' where id_persona='A-00001-00003'")
+            conn.execute("update public.vacantes set sector_empresa='Sin dato' where id_vacante = (select min(id_vacante) from public.vacantes)")
+        self.auditoria_previa = scalar(db, "select count(*) from public.app_audit_log where action in ('srv_update')")
+        for f in extra:
+            _run_file(db, MIG / f)
+        return db
+
+    def test_unifica_respalda_y_no_toca_vacios_ni_otros_valores(self):
+        db = self._db("v10", ["V010_unificar_sin_dato.sql"])
+        try:
+            q = lambda sql: scalar(db, sql)
+            assert q("select carrera from public.personas where id_persona='I-00001-00001'") == "Indefinido"
+            assert q("select municipio from public.personas where id_persona='I-00001-00001'") == "Indefinido"
+            assert q("select escolaridad from public.personas where id_persona='I-00001-00001'") == "Indefinido"
+            assert q("select carrera from public.personas where id_persona='P-00001-00002'") == "Derecho"        # valor real: intacto
+            assert q("select municipio from public.personas where id_persona='P-00001-00002'") == "Indefinido"
+            assert q("select telefono from public.personas where id_persona='P-00001-00002'") == ""              # vacío: intacto
+            assert q("select carrera is null from public.personas where id_persona='A-00001-00003'") is True      # NULL: intacto
+            assert q("select count(*) from public.vacantes where sector_empresa='Sin dato'") == 0
+            assert q("select count(*) from public.respaldo_v010_sin_dato where tabla='vacantes'") == 1
+            assert q("select count(*) from public.app_audit_log where action='migration_V010'") == 1
+            assert q("select count(*) from public.app_audit_log where action='srv_update'") == self.auditoria_previa
+            n = q("select count(*) from public.respaldo_v010_sin_dato")
+            _run_file(db, MIG / "V010_unificar_sin_dato.sql")      # idempotente
+            assert q("select count(*) from public.respaldo_v010_sin_dato") == n
+        finally:
+            _drop_db(db)
+
+    def test_rollback_restaura_los_valores_originales(self):
+        db = self._db("v10rb", ["V010_unificar_sin_dato.sql", "V010_rollback.sql"])
+        try:
+            q = lambda sql: scalar(db, sql)
+            assert q("select carrera from public.personas where id_persona='I-00001-00001'") == "indefinido"
+            assert q("select municipio from public.personas where id_persona='I-00001-00001'") == "Sin Información"
+            assert q("select municipio from public.personas where id_persona='P-00001-00002'") == "  INDEFINIDO "
+            assert q("select count(*) from public.vacantes where sector_empresa='Sin dato'") == 1
+        finally:
+            _drop_db(db)
+
+    def test_respaldo_solo_para_administradores(self):
+        db = self._db("v10rls", ["V010_unificar_sin_dato.sql"])
+        try:
+            with as_user(db, LECTOR) as cur:
+                cur.execute("select count(*) from public.respaldo_v010_sin_dato")
+                assert cur.fetchone()[0] == 0
+            with as_user(db, role="anon") as cur:
+                assert "permission denied" in (_err(cur, "select count(*) from public.respaldo_v010_sin_dato") or "")
+        finally:
+            _drop_db(db)
+
+
 class TestCadenaCompleta:
     def test_aplicar_todo_y_revertir_todo_deja_la_base_como_estaba(self):
         db = _build("cadena", MIGS_1A3 + MIGS_4A8 + ["V008_rollback.sql", "V007_rollback.sql", "V005_rollback.sql", "V004_rollback.sql"])

@@ -25,7 +25,8 @@
 6. **Equipos:** identificador guardado en el navegador en vez de archivo local (ver DESPLIEGUE.md §6). Un navegador nuevo de un colaborador queda «pendiente» hasta que un administrador lo autoriza.
 7. **Bloqueo de login:** 5 intentos fallidos → 60 s de espera (por sesión de navegador).
 8. **Gráficas (08/10/2026):** en las gráficas de tipo de vinculación, «Prácticas profesionales» + «Servicio social» se muestran juntas y «Atención» + «Inserción laboral» también; las tablas, filtros, fichas y exportaciones conservan los cuatro tipos. Las gráficas cuentan juntas las variantes de redacción («MASCULINO»/«Masculino»); los datos solo se corrigen con V009 (opcional) o al cargar archivos nuevos.
-9. **Interfaz:** navegación lateral por secciones, búsqueda global, centro de avisos, componentes unificados. Mismos módulos y mismos nombres de tablas/columnas.
+9. **Dato faltante (12/10/2026):** todas las formas de «sin dato» (vacío, «Indefinido», «Sin información», «Sin dato», «Información no disponible») se muestran con **una sola etiqueta**, `SIN_DATO = "Indefinido"` en `core/constantes.py` (cambiarla ahí la cambia en toda la app). Aplica a gráficas, tablas, filtros, fichas y el detalle de cada barra. Los indicadores («No disponible») conservan su texto porque significan «todavía no se puede calcular». V010 (opcional) deja también la base con una sola forma.
+10. **Interfaz:** navegación lateral por secciones, búsqueda global, centro de avisos, componentes unificados. Mismos módulos y mismos nombres de tablas/columnas.
 
 ## 3. Lo que NO se hizo y por qué
 

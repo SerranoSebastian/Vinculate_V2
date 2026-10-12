@@ -14,7 +14,14 @@ from .texto import normalizar_texto
 # Sinónimos inequívocos (clave = texto normalizado: minúsculas, sin acentos).
 SINONIMOS = {
     "masculino": "Masculino", "hombre": "Masculino",
-    "femenino": "Femenino", "mujer": "Femenino", "Información no disponible": "Indefinido", "Indefinido": "Indefinido", "Sin Información": "Indefinido"
+    "femenino": "Femenino", "mujer": "Femenino",
+}
+
+# Todas las formas en que aparece «no hay dato» (texto normalizado: minúsculas, sin acentos). Se muestran SIEMPRE como SIN_DATO.
+NULOS_EQUIVALENTES = {
+    "", "nan", "none", "nat", "null", "<na>", "n/a", "s/d",
+    "indefinido", "indefinida", "sin informacion", "sin dato", "sin datos", "sin especificar",
+    "informacion no disponible", "no disponible", "no definido",
 }
 
 # Agrupación visual del tipo de vinculación (los datos conservan los cuatro tipos).
@@ -28,8 +35,18 @@ GRUPOS_VISUALES = {
 }
 
 
-def _vacio(valor) -> bool:
-    return normalizar_texto(valor) in ("", "nan", "none", "nat", "null")
+def es_nulo(valor) -> bool:
+    """True si el valor es vacío o cualquiera de las formas de «sin dato» (Indefinido, Sin información, Sin dato…)."""
+    return normalizar_texto(valor) in NULOS_EQUIVALENTES
+
+
+def homologar_nulos(serie: pd.Series, etiqueta: str = SIN_DATO) -> pd.Series:
+    """Serie lista para MOSTRAR: todo faltante pasa a una sola etiqueta; el resto queda igual. No modifica los datos guardados."""
+    s = serie.astype("object")
+    return s.where(~s.map(es_nulo), etiqueta)
+
+
+_vacio = es_nulo
 
 
 def _mejor_variante(variantes: pd.Series, clave: str) -> str:
@@ -59,6 +76,6 @@ def unificar_variantes(serie: pd.Series) -> pd.Series:
 
 def agrupar_tipo_vinculacion(serie: pd.Series) -> pd.Series:
     """Para gráficas: Prácticas+Servicio social → un bloque; Atención+Inserción laboral → otro. Lo demás queda igual."""
-    s = serie.fillna("").astype(str).str.strip()
+    s = homologar_nulos(serie.fillna("").astype(str).str.strip())
     agrupado = s.map(normalizar_texto).map(GRUPOS_VISUALES)
-    return agrupado.where(agrupado.notna(), s.replace("", SIN_DATO))
+    return agrupado.where(agrupado.notna(), s)
