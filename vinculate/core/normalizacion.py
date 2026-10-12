@@ -14,7 +14,7 @@ from .texto import normalizar_texto
 # Sinónimos inequívocos (clave = texto normalizado: minúsculas, sin acentos).
 SINONIMOS = {
     "masculino": "Masculino", "hombre": "Masculino",
-    "femenino": "Femenino", "mujer": "Femenino",
+    "femenino": "Femenino", "mujer": "Femenino", "Información no disponible": "Indefinido", "Indefinido": "Indefinido", "Sin Información": "Indefinido"
 }
 
 # Agrupación visual del tipo de vinculación (los datos conservan los cuatro tipos).
