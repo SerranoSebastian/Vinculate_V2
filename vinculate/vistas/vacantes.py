@@ -221,6 +221,44 @@ def _seccion_empresas(s: Sesion) -> None:
                 st.success(f"Ubicación de {empresa} guardada.")
                 st.rerun()
 
+    if con_ubic and s.puede("vacantes", "edit") and not res.empty:
+        _editor_coordenadas(s, v, cat)
+
+
+def _editor_coordenadas(s: Sesion, v: pd.DataFrame, cat: pd.DataFrame) -> None:
+    """Edición rápida de latitud/longitud de todas las empresas (para el mapa). Guarda solo lo que cambió."""
+    st.markdown("#### Coordenadas exactas (edición rápida)")
+    if not empresas.tiene_coordenadas(cat):
+        st.info("La base todavía no tiene las columnas de latitud/longitud (migración V004). Aplícala en Supabase para capturar coordenadas.")
+        return
+    ui.nota("Aquí capturas dónde está cada empresa para dibujarla en el **Mapa territorial**. En Google Maps: clic derecho sobre el lugar → "
+            "clic en los números de arriba (se copian como 19.31390, -98.24040) → pégalos en «Pegar (lat, lon)». "
+            "O escribe latitud (≈ 19.3) y longitud (≈ −98.2, con signo menos) por separado. Deja vacío lo que no sepas: nada se estima.")
+    d = empresas.directorio(v, cat)
+    base = d[["Empresa", "Sector", "Municipio", "Latitud", "Longitud"]].copy()
+    base["Latitud"] = pd.to_numeric(base["Latitud"], errors="coerce")
+    base["Longitud"] = pd.to_numeric(base["Longitud"], errors="coerce")
+    vista_ed = base.assign(**{"Pegar (lat, lon)": ""})
+    n = st.session_state.get("_coords_reinicio", 0)
+    editado = st.data_editor(
+        vista_ed, hide_index=True, width="stretch", num_rows="fixed", key=f"ed_coords_{n}", height=380,
+        disabled=["Empresa", "Sector", "Municipio"],
+        column_config={
+            "Latitud": st.column_config.NumberColumn("Latitud", format="%.6f", help="≈ 19.3 en Tlaxcala"),
+            "Longitud": st.column_config.NumberColumn("Longitud", format="%.6f", help="≈ −98.2 en Tlaxcala (negativa)"),
+            "Pegar (lat, lon)": st.column_config.TextColumn("Pegar (lat, lon)", help="Ej.: 19.31390, -98.24040 (lo que copia Google Maps)"),
+        })
+    if st.button("💾 Guardar coordenadas", key="btn_guardar_coords"):
+        guardadas, errores = empresas.guardar_coordenadas_lote(s, base, editado)
+        for e in errores:
+            st.error(e)
+        if guardadas:
+            st.session_state["_coords_reinicio"] = n + 1
+            st.toast(f"Coordenadas guardadas: {', '.join(guardadas)}.", icon="✅")
+            st.rerun()
+        elif not errores:
+            st.info("No hay cambios por guardar.")
+
 
 # ------------------------------------------------------------------------ alta
 def _seccion_alta(s: Sesion) -> None:

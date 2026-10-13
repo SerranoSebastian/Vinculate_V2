@@ -7,6 +7,7 @@ import pandas as pd
 
 from ..auth import servicio as auth_servicio
 from ..auth.sesion import Sesion
+from ..core.puntos import parsear_coordenadas, parsear_numero, validar_coordenadas
 from ..core.texto import normalizar_texto
 from ..core.ubicacion import MUNICIPIOS_TLAXCALA
 from ..repositories.catalogos import RepoEmpresas
@@ -76,3 +77,86 @@ def guardar_ubicacion(sesion: Sesion, empresa: str, municipio: str, direccion: s
         raise ErrorDatos("La base todavía no tiene las columnas de ubicación de empresas. Aplica la migración V004 en Supabase.")
     repo.guardar_ubicacion(empresa, sector, carga)
     auth_servicio.auditar("empresa_ubicacion", f"empresa={empresa}; municipio={municipio}")
+
+
+def tiene_coordenadas(df: pd.DataFrame) -> bool:
+    """True si la base ya tiene latitud/longitud en el catálogo de empresas (migración V004)."""
+    return "latitud" in df.columns and "longitud" in df.columns
+
+
+def directorio(vacantes: pd.DataFrame, catalogo_df: pd.DataFrame) -> pd.DataFrame:
+    """Una fila por empresa (con vacantes o solo del catálogo) con ubicación y coordenadas capturadas. Nunca inventa nada."""
+    res = resumen(vacantes, catalogo_df)
+    cols = ["Empresa", "Sector", "Municipio", "Dirección", "C.P.", "Latitud", "Longitud", "Vacantes", "Vigentes"]
+    base = res.reindex(columns=["Empresa", "Sector", "Municipio", "Vacantes", "Vigentes"]).copy()
+    base["_clave"] = base["Empresa"].map(normalizar_texto)
+    if not catalogo_df.empty and "nombre" in catalogo_df.columns:
+        c = catalogo_df.assign(_clave=catalogo_df["nombre"].map(normalizar_texto)).drop_duplicates("_clave")
+        faltan = c[~c["_clave"].isin(base["_clave"])]
+        if not faltan.empty:  # empresas del catálogo que aún no tienen vacantes
+            extra = pd.DataFrame({"Empresa": faltan["nombre"], "Sector": faltan.get("sector", ""),
+                                  "Municipio": faltan["municipio"] if "municipio" in faltan.columns else "",
+                                  "Vacantes": 0, "Vigentes": 0, "_clave": faltan["_clave"]})
+            base = pd.concat([base, extra], ignore_index=True)
+        ci = c.set_index("_clave")
+        for destino, origen in (("Dirección", "direccion"), ("C.P.", "codigo_postal"), ("Latitud", "latitud"), ("Longitud", "longitud")):
+            base[destino] = base["_clave"].map(ci[origen]) if origen in ci.columns else None
+    else:
+        for destino in ("Dirección", "C.P.", "Latitud", "Longitud"):
+            base[destino] = None
+    for col in ("Sector", "Municipio", "Dirección", "C.P."):
+        base[col] = base[col].fillna("").astype(str).replace("nan", "")
+    base[["Vacantes", "Vigentes"]] = base[["Vacantes", "Vigentes"]].fillna(0).astype(int)
+    return base[cols].sort_values(["Vacantes", "Empresa"], ascending=[False, True]).reset_index(drop=True)
+
+
+def guardar_coordenadas(sesion: Sesion, empresa: str, latitud, longitud, sector: str | None = None) -> None:
+    """Guarda (o borra, si ambas vienen vacías) las coordenadas exactas de una empresa. Valida igual que la base (V004)."""
+    if not sesion.puede("vacantes", "edit"):
+        raise SinPermiso("Tu perfil no tiene permiso para editar empresas y vacantes.")
+    empresa = (empresa or "").strip()
+    if not empresa:
+        raise ValueError("Elige una empresa.")
+    problema = validar_coordenadas(latitud, longitud)
+    if problema:
+        raise ValueError(problema)
+    lat, lon = parsear_numero(latitud), parsear_numero(longitud)
+    repo = RepoEmpresas(sesion.cliente)
+    previa = repo.obtener(empresa)
+    if previa is not None and "latitud" not in previa:
+        raise ErrorDatos("La base todavía no tiene las columnas de ubicación de empresas. Aplica la migración V004 en Supabase.")
+    carga = {"latitud": lat, "longitud": lon}
+    if (previa or {}).get("ubicacion_fuente") in (None, ""):
+        carga["ubicacion_fuente"] = "manual"
+    repo.guardar_ubicacion(empresa, sector, carga)
+    auth_servicio.auditar("empresa_coordenadas", f"empresa={empresa}; " + ("coordenadas borradas" if lat is None else "coordenadas capturadas"))
+
+
+def guardar_coordenadas_lote(sesion: Sesion, base: pd.DataFrame, editado: pd.DataFrame,
+                             col_pegado: str = "Pegar (lat, lon)") -> tuple[list[str], list[str]]:
+    """Compara la tabla original con la editada y guarda SOLO las filas que cambiaron.
+
+    Si la celda «pegar» trae algo (p. ej. «19.31390, -98.24040» copiado de Google Maps), tiene prioridad sobre latitud/longitud.
+    Devuelve (empresas guardadas, mensajes de error por empresa). Una fila con error no impide guardar las demás."""
+    guardadas, errores = [], []
+    orig = base.set_index("Empresa")
+    sectores = base.set_index("Empresa")["Sector"].to_dict() if "Sector" in base.columns else {}
+    for _, f in editado.iterrows():
+        nombre = f["Empresa"]
+        pegado = f.get(col_pegado)
+        if pegado is not None and not pd.isna(pegado) and str(pegado).strip():
+            lat, lon = parsear_coordenadas(str(pegado))
+            if lat is None:
+                errores.append(f"{nombre}: no pude leer «{pegado}». Usa el formato 19.31390, -98.24040.")
+                continue
+        else:
+            lat, lon = parsear_numero(f.get("Latitud")), parsear_numero(f.get("Longitud"))
+        antes = (parsear_numero(orig.at[nombre, "Latitud"]), parsear_numero(orig.at[nombre, "Longitud"]))
+        if (lat, lon) == antes:
+            continue
+        try:
+            guardar_coordenadas(sesion, nombre, lat, lon, sectores.get(nombre) or None)
+            guardadas.append(nombre)
+        except (ValueError, ErrorDatos, SinPermiso) as exc:
+            errores.append(f"{nombre}: {exc}")
+    return guardadas, errores

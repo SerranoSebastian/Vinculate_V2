@@ -53,7 +53,7 @@ def _combinaciones():
     c += [("vinculaciones", "vinculaciones_apartado", v) for v in vinculaciones.SECCIONES.values()]
     c += [("ridet", "ridet_vista", v) for v in ridet.VISTAS.values()]
     c += [("administracion", "adm_apartado", v[0]) for v in administracion.APARTADOS.values()]
-    c += [("mapa", "mapa_capa", k) for k in ("personas", "historicos", "vacantes", "empresas")]
+    c += [("mapa", "mapa_contar", k) for k in ("personas", "historicos", "vacantes")]
     c += [("explorador", "explorador_base", k) for k in ("personas", "historicos", "vacantes", "vinculaciones")]
     return c
 
@@ -70,9 +70,9 @@ def test_cada_apartado_se_ejecuta(pagina, clave, valor):
 
 
 # -------------------------------------------------- mapa con geometría (sintética) validada
-@pytest.mark.parametrize("capa", ["personas", "historicos", "vacantes", "empresas"])
-def test_mapa_dibuja_coropletico_cuando_hay_geometria_valida(tmp_path, monkeypatch, capa):
-    """Con un GeoJSON de 60 cuadritos SINTÉTICOS (no son límites reales) el mapa se dibuja; sin él, no."""
+@pytest.mark.parametrize("medida", ["personas", "historicos", "vacantes"])
+def test_mapa_dibuja_un_solo_mapa_cuando_hay_geometria_valida(tmp_path, monkeypatch, medida):
+    """Con un GeoJSON de 60 cuadritos SINTÉTICOS (no son límites reales) se dibuja UN mapa; sin él, no."""
     import json
 
     from tests.test_territorio import _geojson_sintetico
@@ -85,17 +85,12 @@ def test_mapa_dibuja_coropletico_cuando_hay_geometria_valida(tmp_path, monkeypat
     at = AppTest.from_function(_app, default_timeout=60)
     at.session_state[CLAVE_SESION] = sesion_demo()
     at.session_state["_pagina_prueba"] = "mapa"
-    at.session_state["mapa_capa"] = capa
+    at.session_state["mapa_contar"] = medida
     at.run()
     assert not at.exception, [e.value for e in at.exception]
     assert not at.error, [e.value for e in at.error]
-    avisos = " ".join(w.value for w in at.warning)
-    if capa in ("personas", "historicos"):
-        assert len(at.get("plotly_chart")) == 1, "con geometría válida debe haber un mapa"
-        assert "Cómo activar el mapa" not in " ".join(e.label for e in at.expander)
-    else:
-        # los datos de prueba no traen municipio de empresa: se dice, no se inventa ninguna ubicación
-        assert "Todavía no hay municipio capturado" in avisos and not at.get("plotly_chart")
+    assert len(at.get("plotly_chart")) == 1, "con geometría válida debe haber UN solo mapa"
+    assert "Cómo activar el mapa" not in " ".join(e.label for e in at.expander)
 
 
 def test_mapa_sin_geometria_muestra_instrucciones_y_ranking(tmp_path, monkeypatch):

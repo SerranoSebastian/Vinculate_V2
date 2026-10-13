@@ -55,3 +55,10 @@
    sin municipio** (UMÁ RM3, EC Grupo San Luis, Stripseel, DDEQSA, MJCR). Confirmar con quien elaboró el RIDET el caso **Altzayanca**: el encabezado de Oriente dice
    «7 municipios» y no lo nombra, pero el cuerpo le asigna zona, empresa y planteles; aquí se cuenta en Oriente para que los 60 municipios queden en una región.
 6. **Versión de Streamlit en producción:** el proyecto declara `streamlit>=1.52,<2` (probado en 1.52 y 1.65).
+
+## Mapa único con capas (personas + empresas)
+- Un solo mapa con casillas «Personas» y «Empresas»; reemplaza el selector entre mapas.
+- Empresas: un punto por empresa en su latitud/longitud reales (V004, sin migración nueva). Nunca se estiman coordenadas: sin coordenadas = se listan aparte; con coordenadas inválidas (fuera de México, invertidas, una sola) = se listan con el problema.
+- Distinción entre empresas de la misma zona: color propio por empresa, tamaño por vacantes, leyenda que oculta/muestra, filtro, «Acercar a» y separación visual opcional (~40 m) de coordenadas idénticas; el hover siempre muestra la coordenada real.
+- Captura rápida de coordenadas en Vacantes → Empresas (se puede pegar «lat, lon» de Google Maps); respeta permisos y auditoría.
+- Los fondos CARTO/OSM piden teselas al navegador; «Sin fondo» no depende de ningún servidor externo.

@@ -13,7 +13,7 @@ todo lo nuevo son columnas/tablas opcionales y migraciones documentadas con su r
 | Sección | Qué hace |
 |---|---|
 | **Inicio** | Tablero ejecutivo: indicadores, tendencias, avisos de prioridades. Muestra «Información no disponible» cuando falta un dato; no inventa nada. |
-| **Mapa territorial** | Distribución por municipio (personas, históricos, vacantes, empresas). El mapa dibujado se activa al agregar la geometría oficial de INEGI (ver `geo/LEEME.md`); mientras tanto muestra el ranking con los mismos datos. |
+| **Mapa territorial** | UN solo mapa con casillas para ver personas (por municipio) y/o empresas (punto en sus coordenadas exactas, un color por empresa). Las coordenadas se capturan en Vacantes y empresas → Empresas → «Coordenadas exactas (edición rápida)»; las empresas sin coordenadas se listan, no se dibujan. Geometría oficial de INEGI en `geo/`. |
 | **RIDET** | Regiones, empresas del documento oficial (extraídas del PDF y validadas contra sus totales), clasificación de las empresas con vacantes y descarga del documento. |
 | **Personas · Vacantes y empresas · Vinculaciones** | Análisis, directorio y ficha, alta, carga Excel/CSV (con vista previa y duplicados), edición/eliminación con confirmación. Modelo de persona maestra (`id_persona_maestro` vs `id_persona`). |
 | **Explorador y Búsqueda** | Consulta libre sobre cualquier base con exportación; búsqueda global por persona, empresa o ID. |

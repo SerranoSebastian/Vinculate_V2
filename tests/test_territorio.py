@@ -86,7 +86,9 @@ def test_figura_del_mapa_no_depende_de_servidores_externos():
     from vinculate.vistas import mapa as vista
     r = mapa.validar_geojson(_geojson_sintetico())
     import pandas as pd
-    fig = vista._figura(pd.DataFrame({"Municipio": ["APIZACO", "TLAXCALA"], "Total": [3, 1]}), r.geojson, "t")
+    fig = vista._figura(pd.DataFrame({"Municipio": ["APIZACO", "TLAXCALA"], "Total": [3, 1]}), r.geojson,
+                        pd.DataFrame(), {}, estilo="white-bg", enfoque=vista.TODO_EL_ESTADO, titulo="t",
+                        mostrar_leyenda=False)
     assert fig.data[0].type == "choroplethmap" and fig.layout.map.style == "white-bg"
 
 
