@@ -14,6 +14,7 @@ import streamlit as st
 
 from ..auth.sesion import Sesion, actual
 from ..components import charts, ui
+from ..config import ayudas
 from ..config.settings import GEO
 from ..config.theme import ESCALA_SEDECO, tema_grafica
 from ..core import mapa as nucleo
@@ -219,9 +220,9 @@ def render() -> None:
     st.markdown("**Qué quieres ver en el mapa**")
     k1, k2, k3 = st.columns([1, 1, 2])
     capa_personas = k1.checkbox("👥 Personas (por municipio)", value=ver_personas, key="mapa_personas", disabled=not ver_personas,
-                                help="Colorea cada municipio según cuántos registros tiene." if ver_personas else "Tu perfil no puede ver Personas.")
+                                help=ayudas.texto("mapa.casilla_personas") if ver_personas else "Tu perfil no puede ver Personas.")
     capa_empresas = k2.checkbox("🏭 Empresas (ubicación exacta)", value=ver_vacantes, key="mapa_empresas", disabled=not ver_vacantes,
-                                help="Un punto por empresa, en las coordenadas capturadas." if ver_vacantes else "Tu perfil no puede ver Vacantes.")
+                                help=ayudas.texto("mapa.casilla_empresas") if ver_vacantes else "Tu perfil no puede ver Vacantes.")
     capa_personas = capa_personas and ver_personas
     capa_empresas = capa_empresas and ver_vacantes
 
@@ -254,8 +255,7 @@ def render() -> None:
             e1, e2 = st.columns(2)
             solo_vigentes = e1.toggle("Solo empresas con vacantes vigentes", key="mapa_solo_vigentes")
             separar = e2.toggle("Separar empresas que comparten ubicación (solo visual)", value=True, key="mapa_separar",
-                                help="Si dos empresas tienen EXACTAMENTE las mismas coordenadas, se reparten unos metros en círculo para que "
-                                     "ninguna tape a otra. Al pasar el cursor siempre ves las coordenadas reales.")
+                                help=ayudas.texto("mapa.separar_empresas"))
             elegidas = st.multiselect("Mostrar solo estas empresas", sorted(ok["Empresa"]), key="mapa_filtro_emp", placeholder="Todas")
         opciones_enfoque = [TODO_EL_ESTADO]
         if geo:
@@ -284,19 +284,20 @@ def render() -> None:
         total = int(conteos["Total"].sum() + sum(otros.values()))
         en_mapa = int(conteos["Total"].sum())
         c = st.columns(4)
-        ui.kpi("Con municipio de Tlaxcala", en_mapa, ui.fmt_pct(en_mapa, total) + " del total", contenedor=c[0])
-        ui.kpi("Fuera de Tlaxcala", otros["Fuera de Tlaxcala"], contenedor=c[1])
-        ui.kpi("Sin municipio definido", otros["Sin municipio definido"], "no se dibujan en el mapa", contenedor=c[2])
-        ui.kpi("Municipios con registros", int((conteos["Total"] > 0).sum()), "de 60", contenedor=c[3])
+        ui.kpi("Con municipio de Tlaxcala", en_mapa, ui.fmt_pct(en_mapa, total) + " del total", contenedor=c[0], info="mapa.con_municipio")
+        ui.kpi("Fuera de Tlaxcala", otros["Fuera de Tlaxcala"], contenedor=c[1], info="mapa.fuera_de_tlaxcala")
+        ui.kpi("Sin municipio definido", otros["Sin municipio definido"], "no se dibujan en el mapa", contenedor=c[2], info="mapa.sin_municipio")
+        ui.kpi("Municipios con registros", int((conteos["Total"] > 0).sum()), "de 60", contenedor=c[3], info="mapa.municipios_con_registros")
         if otros["Ubicación no reconocida"]:
             st.warning(f"{otros['Ubicación no reconocida']} registro(s) tienen una ubicación que no coincide con ningún municipio ni estado del catálogo.")
     if capa_empresas and dir_ is not None:
         c = st.columns(4)
         total_e = len(dir_)
-        ui.kpi("Empresas en el mapa", len(ok), f"de {total_e} registradas", contenedor=c[0])
-        ui.kpi("Sin coordenadas", len(sin), "no se dibujan", contenedor=c[1])
-        ui.kpi("Coordenadas con problema", len(mal), "revísalas abajo" if len(mal) else "", contenedor=c[2])
-        ui.kpi("Vacantes vigentes en el mapa", int(pts["Vigentes"].sum()) if not pts.empty else 0, contenedor=c[3])
+        ui.kpi("Empresas en el mapa", len(ok), f"de {total_e} registradas", contenedor=c[0], info="mapa.empresas_en_mapa")
+        ui.kpi("Sin coordenadas", len(sin), "no se dibujan", contenedor=c[1], info="mapa.sin_coordenadas")
+        ui.kpi("Coordenadas con problema", len(mal), "revísalas abajo" if len(mal) else "", contenedor=c[2], info="mapa.coordenadas_con_problema")
+        ui.kpi("Vacantes vigentes en el mapa", int(pts["Vigentes"].sum()) if not pts.empty else 0, contenedor=c[3],
+               info="mapa.vacantes_vigentes_en_mapa")
         if not hay_coords:
             st.info("La base todavía no tiene las columnas de latitud/longitud de empresas (migración V004). Aplícala en Supabase para poder "
                     "dibujar empresas; mientras tanto no se inventa ninguna ubicación.")
@@ -304,9 +305,6 @@ def render() -> None:
         if fuera:
             st.warning(f"{fuera} empresa(s) tienen coordenadas fuera de Tlaxcala. Si no deberían, revísalas (¿latitud y longitud invertidas?).")
 
-    ui.explicacion("Personas: campo «municipio» de la base. Empresas: latitud y longitud capturadas por tu equipo (Vacantes → Empresas).",
-                   "El color de cada municipio es el conteo de registros. Cada empresa es un punto con su propio color, más grande si tiene más vacantes.",
-                   "Es la distribución de la base actual, no de la población. Una empresa sin coordenadas no aparece; no se estima su ubicación.")
     if not capa_personas and not capa_empresas:
         ui.vacio("Marca al menos una casilla (Personas o Empresas) para dibujar el mapa.")
         return
@@ -323,6 +321,7 @@ def render() -> None:
     if geo is not None or not pts.empty:
         if geo is None:
             _como_activar(res)
+        ui.ayuda_grafica("mapa.grafica_mapa", fila_propia=True)
         ev = st.plotly_chart(_figura(conteos if capa_personas else None, geo, pts, colores, estilo=estilo, enfoque=enfoque,
                                      titulo=titulo, mostrar_leyenda=0 < len(pts) <= 40),
                              key="mapa_unico", width="stretch", config=CONFIG_MAPA, on_select="rerun", selection_mode="points")
@@ -341,15 +340,18 @@ def render() -> None:
         tabla = conteos.assign(**{"Región RIDET": conteos["Municipio"].map(lambda m: region_de_municipio(m) or "")})
         tabla = tabla.sort_values(["Total", "Municipio"], ascending=[False, True]).reset_index(drop=True)
         with st.expander("Tabla completa de los 60 municipios"):
+            ui.ayuda_grafica("mapa.tabla_municipios", fila_propia=True)
             ui.tabla(tabla, altura=420)
             ui.boton_exportar(sesion, "personas" if medida in ("personas", "historicos") else "vacantes", tabla, f"mapa_{medida}", f"mapa_{medida}")
     if capa_empresas and dir_ is not None and hay_coords:
         if len(sin):
             with st.expander(f"Empresas sin coordenadas ({len(sin)})"):
+                ui.ayuda_grafica("mapa.tabla_sin_coordenadas", fila_propia=True)
                 ui.nota("No se dibujan hasta que se capturen. Hazlo en Vacantes → Empresas → «Coordenadas exactas (edición rápida)».")
                 ui.tabla(sin, ["Empresa", "Sector", "Municipio", "Dirección", "C.P.", "Vacantes"], altura=300)
         if len(mal):
             with st.expander(f"Coordenadas con problema ({len(mal)})", expanded=True):
+                ui.ayuda_grafica("mapa.tabla_con_problema", fila_propia=True)
                 ui.tabla(mal, ["Empresa", "Latitud", "Longitud", "Problema"], altura=240)
 
     # ---- detalle de lo tocado en el mapa

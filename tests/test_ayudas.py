@@ -13,18 +13,16 @@ PALABRAS_PROHIBIDAS = ["canaliz", "derivad", "revisar", "revisión", "pendiente"
 
 def _claves_usadas(archivo: str) -> set[str]:
     codigo = (RAIZ / "vistas" / archivo).read_text(encoding="utf-8")
-    return set(re.findall(r'(?:info=|ayuda_grafica\()"([\w.]+)"', codigo))
+    return set(re.findall(r'(?:\binfo=|ayuda_grafica\(|ayudas\.texto\()"([\w.]+)"', codigo))
 
 
-def test_cada_ayuda_usada_en_inicio_tiene_texto():
-    usadas = _claves_usadas("inicio.py")
-    assert len(usadas) >= 25
+@pytest.mark.parametrize("archivo,prefijo,minimo", [("inicio.py", "inicio.", 25), ("mapa.py", "mapa.", 14)])
+def test_cada_ayuda_usada_tiene_texto_y_cada_texto_se_usa(archivo, prefijo, minimo):
+    usadas = _claves_usadas(archivo)
+    assert len(usadas) >= minimo
     assert [k for k in usadas if not ayudas.texto(k)] == []
-
-
-def test_no_hay_textos_sin_usar_en_inicio():
-    inicio = {k for k in ayudas.AYUDAS if k.startswith("inicio.")}
-    assert inicio - _claves_usadas("inicio.py") == set()
+    definidas = {k for k in ayudas.AYUDAS if k.startswith(prefijo)}
+    assert definidas - usadas == set()
 
 
 @pytest.mark.parametrize("clave", sorted(ayudas.AYUDAS))

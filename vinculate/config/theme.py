@@ -55,6 +55,8 @@ h1, h2, h3 {{ color: {GUINDA_OSCURO}; font-weight: 800; letter-spacing: -.01em; 
 .vc-info-texto p:last-child {{ margin-bottom: 0; }}
 .vc-info:hover .vc-info-texto, .vc-info:focus .vc-info-texto {{ display: block; }}
 .vc-info-fila {{ display: flex; justify-content: flex-end; height: 0; position: relative; z-index: 5; }}
+.vc-info-fila-propia {{ height: auto; margin-bottom: .2rem; }}
+.vc-info-fila-propia .vc-info {{ top: 0 !important; }}
 .vc-info-fila .vc-info {{ position: relative; top: .85rem; right: .35rem; align-self: flex-start; min-height: 1.25rem; }}
 .vc-kpi-valor {{ font-size: 2rem; font-weight: 800; color: {GUINDA}; line-height: 1.1; }}
 .vc-kpi-valor.vc-nd {{ font-size: 1.05rem; color: var(--tinta-suave); font-weight: 600; padding: .55rem 0; }}

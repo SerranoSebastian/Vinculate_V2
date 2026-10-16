@@ -68,3 +68,8 @@
 - Todos los textos viven en un solo archivo: `vinculate/config/ayudas.py` (diccionario `AYUDAS`). Para cambiar una explicación solo se edita ese texto; no se toca la lógica ni los datos.
 - Reglas de redacción (las revisa `tests/test_ayudas.py`): usar siempre «vinculación», lenguaje para personas ajenas al programa y nada de avisos internos de pendientes o revisiones.
 - Para agregar una ayuda nueva: añadir su texto en `AYUDAS` y pasar `info="clave"` a `ui.kpi(...)` o llamar `ui.ayuda_grafica("clave")` antes de la gráfica.
+
+## Ayudas ❓ en el Mapa territorial
+- Mismo mecanismo que en el Inicio: los 8 indicadores, las casillas «Personas»/«Empresas», el interruptor de separar empresas, el mapa y las tres tablas (municipios, empresas sin coordenadas, coordenadas con problema) tienen su ❓.
+- Los textos están en `vinculate/config/ayudas.py`, claves que empiezan con `mapa.`. Se quitó el recuadro «Fuente, significado e interpretación» del mapa.
+- En el mapa el ❓ va en su propia línea sobre la gráfica (esa esquina la ocupan los botones de zoom); las casillas e interruptores usan la ayuda nativa de Streamlit con el mismo texto.

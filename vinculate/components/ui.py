@@ -53,11 +53,14 @@ def _globo_ayuda(clave: str | None, extra: str = "") -> str:
             f'<span class="vc-info-texto">{parrafos}</span></span>')
 
 
-def ayuda_grafica(clave: str) -> None:
-    """❓ en la esquina superior derecha de una gráfica; se coloca justo antes de la gráfica."""
+def ayuda_grafica(clave: str, *, fila_propia: bool = False) -> None:
+    """❓ en la esquina superior derecha de una gráfica; se coloca justo antes de la gráfica.
+
+    Con `fila_propia=True` ocupa su propia línea (para el mapa, que tiene botones en esa esquina, y para tablas)."""
     html = _globo_ayuda(clave, "vc-info-grafica")
     if html:
-        st.markdown(f'<div class="vc-info-fila">{html}</div>', unsafe_allow_html=True)
+        clase = "vc-info-fila vc-info-fila-propia" if fila_propia else "vc-info-fila"
+        st.markdown(f'<div class="{clase}">{html}</div>', unsafe_allow_html=True)
 
 
 def kpi(etiqueta: str, valor, ayuda: str = "", *, contenedor=None, decimales: int = 0, no_disponible: bool = False,

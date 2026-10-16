@@ -159,6 +159,60 @@ No vinculado: el seguimiento no terminó en una vinculación.""",
     "inicio.grafica_seguimientos_por_empresa": """Muestra con qué empresas se han registrado seguimientos. Se muestran las 12 empresas con más seguimientos.
 
 Cada barra es una empresa y su número es la cantidad de seguimientos que tiene, es decir, las veces que una persona fue vinculada con ella.""",
+
+    # ------------------------------------------------------------------ MAPA TERRITORIAL · casillas y opciones
+    "mapa.casilla_personas": """Colorea cada municipio de Tlaxcala según la cantidad que tiene. Mientras más oscuro el color, más personas (o vinculaciones, o vacantes, según lo que elijas en «Opciones del mapa»).""",
+
+    "mapa.casilla_empresas": """Muestra un punto por cada empresa, en la ubicación exacta que tiene registrada. Cada empresa tiene su propio color y su punto es más grande mientras más vacantes tiene.""",
+
+    "mapa.separar_empresas": """Si dos empresas tienen exactamente la misma ubicación, sus puntos se separan unos metros en círculo para que ninguno tape a otro. Es solo un efecto visual: al pasar el cursor sobre un punto siempre se ven sus coordenadas reales.""",
+
+    # ------------------------------------------------------------------ MAPA TERRITORIAL · indicadores de personas
+    "mapa.con_municipio": """Es la cantidad que se pinta en el mapa dentro de los 60 municipios de Tlaxcala. Lo que se cuenta depende de la opción «Colorear municipios por»: personas únicas, vinculaciones históricas o vacantes.
+
+El porcentaje indica qué parte del total representa. Los datos vienen del municipio registrado en la base.""",
+
+    "mapa.fuera_de_tlaxcala": """Es la cantidad cuyo lugar registrado está en otro estado. Se cuenta, pero no se dibuja en el mapa porque el mapa solo muestra los municipios de Tlaxcala.""",
+
+    "mapa.sin_municipio": """Es la cantidad que no tiene un municipio registrado, por lo que no se puede ubicar en el mapa y no se dibuja. Se cuenta aparte para que el total siga completo.""",
+
+    "mapa.municipios_con_registros": """Es el número de municipios, de los 60 que tiene Tlaxcala, que tienen al menos una persona, vinculación o vacante según lo elegido en «Colorear municipios por».
+
+Un número bajo indica que la actividad se concentra en pocos municipios.""",
+
+    # ------------------------------------------------------------------ MAPA TERRITORIAL · indicadores de empresas
+    "mapa.empresas_en_mapa": """Es el número de empresas que se dibujan como punto porque tienen su ubicación exacta (latitud y longitud) registrada.
+
+El número de abajo («de N registradas») es el total de empresas del catálogo. Si usas los filtros de «Opciones del mapa», aquí se ven solo las empresas que cumplen el filtro.""",
+
+    "mapa.sin_coordenadas": """Son las empresas del catálogo que todavía no tienen su ubicación exacta registrada. No se dibujan, porque el mapa nunca estima ni inventa ubicaciones.
+
+La lista con sus datos está debajo del mapa, en «Empresas sin coordenadas».""",
+
+    "mapa.coordenadas_con_problema": """Son las empresas cuya ubicación registrada no es válida, por ejemplo porque cae fuera de México o porque la latitud y la longitud están invertidas. No se dibujan.
+
+La lista con el motivo de cada una está debajo del mapa, en «Coordenadas con problema».""",
+
+    "mapa.vacantes_vigentes_en_mapa": """Es la suma de las vacantes vigentes de las empresas que se dibujan en el mapa. Una vacante es vigente cuando su estado es «Activa» y su fecha de cierre, si la tiene, aún no ha llegado.
+
+Cambia si se usan los filtros de «Opciones del mapa».""",
+
+    # ------------------------------------------------------------------ MAPA TERRITORIAL · el mapa y las tablas
+    "mapa.grafica_mapa": """Muestra en un solo mapa dónde están las personas y las empresas de Tlaxcala.
+
+Municipios: cada uno se colorea según la cantidad elegida en «Colorear municipios por». Mientras más oscuro, mayor cantidad. Cada persona, vinculación o vacante se ubica por el municipio registrado en la base.
+
+Empresas: cada punto es una empresa, colocada en su ubicación exacta. Cada empresa tiene su propio color para distinguirla de las demás y su punto es más grande mientras más vacantes tiene.
+
+Se pueden mostrar las dos capas juntas o solo una con las casillas de arriba. Con la rueda del ratón se acerca, arrastrando se mueve y al hacer clic en un municipio o en una empresa se abre su detalle. En la leyenda, un clic oculta o muestra una empresa.""",
+
+    "mapa.tabla_municipios": """Lista los 60 municipios de Tlaxcala con su cantidad, de mayor a menor. La columna «Total» es lo elegido en «Colorear municipios por» (personas únicas, vinculaciones históricas o vacantes).
+
+La columna «Región RIDET» indica a qué región pertenece cada municipio.""",
+
+    "mapa.tabla_sin_coordenadas": """Son las empresas que no se dibujan en el mapa porque no tienen su ubicación exacta registrada. La columna «Vacantes» es el total de puestos que han ofrecido.""",
+
+    "mapa.tabla_con_problema": """Son las empresas que no se dibujan en el mapa porque su ubicación registrada no es válida. La columna «Problema» explica el motivo de cada una.""",
 }
 
 
