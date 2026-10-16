@@ -38,7 +38,24 @@ h1, h2, h3 {{ color: {GUINDA_OSCURO}; font-weight: 800; letter-spacing: -.01em; 
 .vc-encabezado {{ border-left: 6px solid {GUINDA}; padding: .15rem 0 .15rem 1rem; margin: .2rem 0 1.1rem; }}
 .vc-encabezado h1 {{ margin: 0; font-size: 1.85rem; }}
 .vc-encabezado p {{ margin: .25rem 0 0; color: var(--tinta-suave); font-size: 1rem; }}
-.vc-kpi-etiqueta {{ font-size: .86rem; color: var(--tinta-suave); font-weight: 600; margin-bottom: .1rem; }}
+.vc-kpi-etiqueta {{ font-size: .86rem; color: var(--tinta-suave); font-weight: 600; margin-bottom: .1rem;
+  display: flex; align-items: center; justify-content: space-between; gap: .4rem; }}
+.vc-info {{ position: relative; display: inline-flex; flex: none; outline: none; }}
+.vc-info-signo {{ width: 1.25rem; height: 1.25rem; border-radius: 50%; border: 1.5px solid {GUINDA}; color: {GUINDA};
+  font-size: .78rem; font-weight: 800; line-height: 1; display: inline-flex; align-items: center; justify-content: center;
+  background: #FFFFFF; cursor: help; }}
+.vc-info:hover .vc-info-signo, .vc-info:focus .vc-info-signo {{ background: {GUINDA}; color: #FFFFFF; }}
+.vc-info-texto {{ display: none; position: absolute; top: 1.6rem; right: 0; width: min(23rem, 82vw); z-index: 99999;
+  background: #FFFFFF; color: {TINTA}; border: 1px solid {DORADO}; border-left: 4px solid {GUINDA}; border-radius: .5rem;
+  box-shadow: 0 8px 24px rgba(98,24,47,.22); padding: .7rem .85rem; text-align: left; font-size: .84rem; font-weight: 400;
+  line-height: 1.45; letter-spacing: 0; text-transform: none; }}
+.vc-kpi-etiqueta .vc-info-texto {{ left: 0; right: auto; }}
+[data-testid="stColumn"]:nth-child(n+3) .vc-kpi-etiqueta .vc-info-texto {{ left: auto; right: 0; }}
+.vc-info-texto p {{ margin: 0 0 .55rem; }}
+.vc-info-texto p:last-child {{ margin-bottom: 0; }}
+.vc-info:hover .vc-info-texto, .vc-info:focus .vc-info-texto {{ display: block; }}
+.vc-info-fila {{ display: flex; justify-content: flex-end; height: 0; position: relative; z-index: 5; }}
+.vc-info-fila .vc-info {{ position: relative; top: .85rem; right: .35rem; align-self: flex-start; min-height: 1.25rem; }}
 .vc-kpi-valor {{ font-size: 2rem; font-weight: 800; color: {GUINDA}; line-height: 1.1; }}
 .vc-kpi-valor.vc-nd {{ font-size: 1.05rem; color: var(--tinta-suave); font-weight: 600; padding: .55rem 0; }}
 .vc-kpi-ayuda {{ font-size: .78rem; color: var(--tinta-suave); margin-top: .15rem; }}

@@ -9,6 +9,7 @@ import pandas as pd
 import streamlit as st
 
 from ..auth.sesion import Sesion
+from ..config import ayudas
 from ..core.constantes import SIN_DATO
 from ..core.normalizacion import es_nulo
 from ..core.texto import texto_vacio
@@ -39,15 +40,38 @@ def encabezado(titulo: str, subtitulo: str = "", icono: str = "") -> None:
                 unsafe_allow_html=True)
 
 
-def kpi(etiqueta: str, valor, ayuda: str = "", *, contenedor=None, decimales: int = 0, no_disponible: bool = False) -> None:
-    """Tarjeta de indicador. `valor=None` o `no_disponible=True` muestra 'No disponible' (nunca un 0 inventado)."""
+def _globo_ayuda(clave: str | None, extra: str = "") -> str:
+    """HTML del signo ❓ con su recuadro flotante (aparece al pasar el mouse o al enfocarlo con teclado/toque).
+
+    El texto sale de `config/ayudas.py`. Si la clave no tiene texto, no se dibuja nada.
+    """
+    contenido = ayudas.texto(clave) if clave else None
+    if not contenido:
+        return ""
+    parrafos = "".join(f"<p>{escape(p.strip()).replace(chr(10), '<br>')}</p>" for p in contenido.split("\n\n") if p.strip())
+    return (f'<span class="vc-info {extra}" tabindex="0" role="note" aria-label="Explicación"><span class="vc-info-signo">?</span>'
+            f'<span class="vc-info-texto">{parrafos}</span></span>')
+
+
+def ayuda_grafica(clave: str) -> None:
+    """❓ en la esquina superior derecha de una gráfica; se coloca justo antes de la gráfica."""
+    html = _globo_ayuda(clave, "vc-info-grafica")
+    if html:
+        st.markdown(f'<div class="vc-info-fila">{html}</div>', unsafe_allow_html=True)
+
+
+def kpi(etiqueta: str, valor, ayuda: str = "", *, contenedor=None, decimales: int = 0, no_disponible: bool = False,
+        info: str | None = None) -> None:
+    """Tarjeta de indicador. `valor=None` o `no_disponible=True` muestra 'No disponible' (nunca un 0 inventado).
+
+    `info` es el nombre del texto de ayuda (config/ayudas.py) que se muestra en el ❓ de la tarjeta."""
     cont = contenedor if contenedor is not None else st
     with cont.container(border=True):
         nd = no_disponible or valor is None
         texto = "No disponible" if nd else (valor if isinstance(valor, str) else fmt_num(valor, decimales))
         clase = "vc-kpi-valor vc-nd" if nd else "vc-kpi-valor"
         ayuda_html = f'<div class="vc-kpi-ayuda">{escape(ayuda)}</div>' if ayuda else ""
-        st.markdown(f'<div class="vc-kpi-etiqueta">{escape(etiqueta)}</div><div class="{clase}">{escape(str(texto))}</div>{ayuda_html}',
+        st.markdown(f'<div class="vc-kpi-etiqueta"><span>{escape(etiqueta)}</span>{_globo_ayuda(info)}</div><div class="{clase}">{escape(str(texto))}</div>{ayuda_html}',
                     unsafe_allow_html=True)
 
 

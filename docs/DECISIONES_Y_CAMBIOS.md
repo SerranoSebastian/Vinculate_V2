@@ -62,3 +62,9 @@
 - Distinción entre empresas de la misma zona: color propio por empresa, tamaño por vacantes, leyenda que oculta/muestra, filtro, «Acercar a» y separación visual opcional (~40 m) de coordenadas idénticas; el hover siempre muestra la coordenada real.
 - Captura rápida de coordenadas en Vacantes → Empresas (se puede pegar «lat, lon» de Google Maps); respeta permisos y auditoría.
 - Los fondos CARTO/OSM piden teselas al navegador; «Sin fondo» no depende de ningún servidor externo.
+
+## Ayudas ❓ en el Inicio
+- Cada indicador y gráfica del Inicio tiene un ❓ que muestra su explicación al pasar el mouse (o al tocarlo / enfocarlo con teclado). Se quitaron los recuadros «Fuente, significado e interpretación» del Inicio.
+- Todos los textos viven en un solo archivo: `vinculate/config/ayudas.py` (diccionario `AYUDAS`). Para cambiar una explicación solo se edita ese texto; no se toca la lógica ni los datos.
+- Reglas de redacción (las revisa `tests/test_ayudas.py`): usar siempre «vinculación», lenguaje para personas ajenas al programa y nada de avisos internos de pendientes o revisiones.
+- Para agregar una ayuda nueva: añadir su texto en `AYUDAS` y pasar `info="clave"` a `ui.kpi(...)` o llamar `ui.ayuda_grafica("clave")` antes de la gráfica.

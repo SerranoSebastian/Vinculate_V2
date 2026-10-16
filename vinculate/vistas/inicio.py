@@ -27,11 +27,11 @@ def _kpis_personas(s: Sesion, pf: pd.DataFrame) -> None:
     sin_anio = int(pf["año"].isna().sum()) if not pf.empty else 0
     st.markdown("#### 👥 Personas")
     c = st.columns(5)
-    ui.kpi("Personas únicas", unicas, "Cuenta cada persona una sola vez", contenedor=c[0])
-    ui.kpi("Vinculaciones históricas", vinc, "Cada registro histórico", contenedor=c[1])
-    ui.kpi("Personas recurrentes", recurrentes, "Con 2 o más vinculaciones", contenedor=c[2])
-    ui.kpi("Vinculaciones por persona", (vinc / unicas) if unicas else None, "Promedio del filtro", contenedor=c[3], decimales=2)
-    ui.kpi("Registros sin año", sin_anio, "No se asignan a ningún periodo", contenedor=c[4])
+    ui.kpi("Personas únicas", unicas, "Cuenta cada persona una sola vez", contenedor=c[0], info="inicio.personas_unicas")
+    ui.kpi("Vinculaciones históricas", vinc, "Cada registro histórico", contenedor=c[1], info="inicio.vinculaciones_historicas")
+    ui.kpi("Personas recurrentes", recurrentes, "Con 2 o más vinculaciones", contenedor=c[2], info="inicio.personas_recurrentes")
+    ui.kpi("Vinculaciones por persona", (vinc / unicas) if unicas else None, "Promedio del filtro", contenedor=c[3], decimales=2, info="inicio.vinculaciones_por_persona")
+    ui.kpi("Registros sin año", sin_anio, "No se asignan a ningún periodo", contenedor=c[4], info="inicio.registros_sin_anio")
 
 
 def _kpis_vacantes(vf: pd.DataFrame) -> None:
@@ -39,31 +39,31 @@ def _kpis_vacantes(vf: pd.DataFrame) -> None:
     con_cierre = tiene_vigencia(vf)
     total = len(vf)
     c = st.columns(5)
-    ui.kpi("Vacantes registradas", total, "Registros de puestos", contenedor=c[0])
+    ui.kpi("Vacantes registradas", total, "Registros de puestos", contenedor=c[0], info="inicio.vacantes_registradas")
     if con_cierre:
         vig = int(vigentes_mask(vf).sum()) if total else 0
-        ui.kpi("Vacantes vigentes", vig, "Activas y sin cierre vencido", contenedor=c[1])
+        ui.kpi("Vacantes vigentes", vig, "Activas y sin cierre vencido", contenedor=c[1], info="inicio.vacantes_vigentes")
     else:
         activas = int(vf["Estado"].eq("Activa").sum()) if total else 0
-        ui.kpi("Vacantes activas", activas, "La vigencia aún no se puede verificar (falta fecha de cierre)", contenedor=c[1])
-    ui.kpi("Empresas con vacantes", _n_unicos(vf["Empresa"]) if total else 0, "Empresas distintas", contenedor=c[2])
-    ui.kpi("Puestos distintos", _n_unicos(vf["Tipo de Vacante"]) if total else 0, "Puestos normalizados", contenedor=c[3])
+        ui.kpi("Vacantes activas", activas, "La vigencia aún no se puede verificar (falta fecha de cierre)", contenedor=c[1], info="inicio.vacantes_activas")
+    ui.kpi("Empresas con vacantes", _n_unicos(vf["Empresa"]) if total else 0, "Empresas distintas", contenedor=c[2], info="inicio.empresas_con_vacantes")
+    ui.kpi("Puestos distintos", _n_unicos(vf["Tipo de Vacante"]) if total else 0, "Puestos normalizados", contenedor=c[3], info="inicio.puestos_distintos")
     if con_cierre:
-        ui.kpi("Sin fecha de cierre", int(vf["fecha_cierre"].isna().sum()) if total else 0, "Pendientes de definir", contenedor=c[4])
+        ui.kpi("Sin fecha de cierre", int(vf["fecha_cierre"].isna().sum()) if total else 0, "Pendientes de definir", contenedor=c[4], info="inicio.sin_fecha_de_cierre")
     else:
-        ui.kpi("Sin fecha de cierre", None, "Requiere la migración V007", contenedor=c[4], no_disponible=True)
+        ui.kpi("Sin fecha de cierre", None, "Requiere la migración V007", contenedor=c[4], no_disponible=True, info="inicio.sin_fecha_de_cierre")
 
 
 def _kpis_seguimiento(sf: pd.DataFrame) -> None:
     st.markdown("#### 🔗 Seguimiento con empresas")
     total = len(sf)
     c = st.columns(4)
-    ui.kpi("Seguimientos", total, "Acciones registradas persona → empresa", contenedor=c[0])
+    ui.kpi("Seguimientos", total, "Acciones registradas persona → empresa", contenedor=c[0], info="inicio.seguimientos")
     colocadas = int(sf.loc[sf["estatus"].eq("Colocado"), "id_persona_maestro"].nunique()) if total else 0
-    ui.kpi("Personas colocadas", colocadas, "Con al menos una colocación", contenedor=c[1])
+    ui.kpi("Personas colocadas", colocadas, "Con al menos una colocación", contenedor=c[1], info="inicio.personas_colocadas")
     emp = _n_unicos(sf.loc[sf["empresa"].ne("Sin asignar"), "empresa"]) if total else 0
-    ui.kpi("Empresas con seguimiento", emp, contenedor=c[2])
-    ui.kpi("No vinculados", int(sf["estatus"].eq("No vinculado").sum()) if total else 0, "Seguimientos sin vinculación", contenedor=c[3])
+    ui.kpi("Empresas con seguimiento", emp, contenedor=c[2], info="inicio.empresas_con_seguimiento")
+    ui.kpi("No vinculados", int(sf["estatus"].eq("No vinculado").sum()) if total else 0, "Seguimientos sin vinculación", contenedor=c[3], info="inicio.no_vinculados")
 
 
 # ------------------------------------------------------------- drill-down
@@ -122,12 +122,6 @@ def render() -> None:
         _kpis_vacantes(vf)
     if sf is not None:
         _kpis_seguimiento(sf)
-    ui.explicacion(
-        "Registros de Supabase visibles para tu perfil, después de aplicar los filtros activos.",
-        "Personas únicas cuenta a cada persona maestra una vez; las vinculaciones históricas cuentan cada registro. "
-        "Las vacantes son publicaciones de puestos; los seguimientos son acciones persona → empresa.",
-        "Una vacante o un seguimiento no equivale a una contratación. «No disponible» significa que el dato todavía no existe "
-        "en la base; nunca se sustituye por un cero.")
     st.divider()
 
     pestañas = []
@@ -148,22 +142,22 @@ def render() -> None:
                 maestras_f = obtener_personas_maestras(pf)
                 c1, c2 = st.columns(2)
                 with c1:
+                    ui.ayuda_grafica("inicio.grafica_evolucion_anual")
                     paneles.evolucion_anual(pf, f"g_evo_{n_sel}")
-                    ui.explicacion("Año y fecha de cada vinculación histórica.",
-                                   "Barras: vinculaciones por año; línea: personas únicas en ese año.",
-                                   "Si hay años estimados se muestran con barra rayada: fueron completados en una limpieza histórica "
-                                   "y no capturados originalmente. Usa el filtro para excluirlos.")
                 with c2:
+                    ui.ayuda_grafica("inicio.grafica_tipo_vinculacion")
                     paneles.tipos_vinculacion(pf, f"g_tipo_{n_sel}")
                 c3, c4 = st.columns(2)
                 with c3:
                     mun = charts.conteo(maestras_f["municipio"], "Municipio", "Personas", top=15)
+                    ui.ayuda_grafica("inicio.grafica_municipio")
                     sel = charts.mostrar_seleccionable(charts.barras_h(mun, "Municipio", "Personas", "Personas únicas por municipio / estado (clic para ver el detalle)"),
                                                        f"g_mun_{n_sel}")
                     if sel:
                         selecciones["municipio"] = (sel, f"Personas de {sel}")
                 with c4:
                     inst = charts.conteo(maestras_f["Institución"], "Institución", "Personas", top=12)
+                    ui.ayuda_grafica("inicio.grafica_institucion")
                     sel = charts.mostrar_seleccionable(charts.barras_h(inst, "Institución", "Personas", "Instituciones (clic para ver el detalle)"),
                                                        f"g_inst_{n_sel}")
                     if sel:
@@ -171,19 +165,18 @@ def render() -> None:
                 c5, c6 = st.columns(2)
                 with c5:
                     car = charts.conteo(maestras_f["carrera"], "Carrera", "Personas", top=12)
+                    ui.ayuda_grafica("inicio.grafica_carrera")
                     sel = charts.mostrar_seleccionable(charts.barras_h(car, "Carrera", "Personas", "Carreras (clic para ver el detalle)"),
                                                        f"g_car_{n_sel}")
                     if sel:
                         selecciones["carrera"] = (sel, f"Personas de la carrera {sel}")
                 with c6:
                     sx = charts.conteo(maestras_f["sexo"], "Sexo", "Personas")
+                    ui.ayuda_grafica("inicio.grafica_sexo")
                     charts.mostrar(charts.dona(sx, "Sexo", "Personas", "Personas únicas por sexo"), f"g_sexo_{n_sel}")
                 if "institucion_fuente" in pf.columns and (pf["institucion_fuente"] == "balanceado").any():
                     n_b = int((pf["institucion_fuente"] == "balanceado").sum())
                     ui.nota(f"{n_b} registro(s) tienen la institución asignada por una corrección de balanceo (no capturada por la persona).")
-                ui.explicacion("Una fila por persona maestra, con su dato más reciente y completo.",
-                               "Distribuye personas únicas por municipio, institución, carrera y sexo.",
-                               f"«{SIN_DATO}» agrupa a quienes no tienen ese dato. Haz clic en una barra para ver quiénes son.")
 
     if vf is not None:
         with tabs["Vacantes"]:
@@ -196,11 +189,14 @@ def render() -> None:
                     if mes.empty:
                         ui.vacio("Las vacantes del filtro no tienen fecha.")
                     else:
+                        ui.ayuda_grafica("inicio.grafica_vacantes_por_mes")
                         charts.mostrar(charts.area(mes, "Mes", "Vacantes", "Vacantes registradas por mes"), f"g_vmes_{n_sel}")
                 with c2:
                     vig = clasificar_vigencia(vf).value_counts().rename_axis("Situación").reset_index(name="Vacantes")
+                    ui.ayuda_grafica("inicio.grafica_situacion_vacantes")
                     charts.mostrar(charts.dona(vig, "Situación", "Vacantes", "Situación de las vacantes"), f"g_vvig_{n_sel}")
                 emp = charts.conteo(vf["Empresa"], "Empresa", "Vacantes", top=12)
+                ui.ayuda_grafica("inicio.grafica_empresas_con_mas_vacantes")
                 sel = charts.mostrar_seleccionable(charts.barras_h(emp, "Empresa", "Vacantes", "Empresas con más vacantes (clic para ver el detalle)"),
                                                    f"g_vemp_{n_sel}")
                 if sel:
@@ -208,8 +204,6 @@ def render() -> None:
                 if not tiene_vigencia(vf):
                     ui.nota("La vigencia real no se puede calcular porque la base aún no tiene fecha de cierre (migración V007). "
                             "«Activa» no garantiza que la vacante siga abierta.")
-                else:
-                    ui.nota("Vigente = estado Activa y sin fecha de cierre vencida. «Activa con cierre vencido» necesita revisión.")
 
     if sf is not None:
         with tabs["Seguimiento"]:
@@ -219,6 +213,7 @@ def render() -> None:
                 c1, c2 = st.columns(2)
                 with c1:
                     est = charts.conteo(sf["estatus"], "Estatus", "Seguimientos")
+                    ui.ayuda_grafica("inicio.grafica_seguimientos_por_estatus")
                     charts.mostrar(charts.dona(est, "Estatus", "Seguimientos", "Seguimientos por estatus"), f"g_sest_{n_sel}")
                 with c2:
                     emp = sf[sf["empresa"].ne("Sin asignar")]
@@ -226,6 +221,7 @@ def render() -> None:
                         ui.vacio("Los seguimientos no tienen empresa asignada.")
                     else:
                         d = charts.conteo(emp["empresa"], "Empresa", "Seguimientos", top=12)
+                        ui.ayuda_grafica("inicio.grafica_seguimientos_por_empresa")
                         charts.mostrar(charts.barras_h(d, "Empresa", "Seguimientos", "Seguimientos por empresa"), f"g_semp_{n_sel}")
 
     if selecciones:
