@@ -10,8 +10,7 @@ from ..core.constantes import SIN_DATO
 from ..core.normalizacion import homologar_nulos, unificar_variantes
 from ..core.personas import obtener_personas_maestras
 from ..core.vacantes import clasificar_vigencia, tiene_vigencia, vigentes_mask
-from ..repositories.errores import ErrorDatos
-from ..services import datos, disponibilidad
+from ..services import datos
 from . import ficha
 
 
@@ -27,18 +26,12 @@ def _kpis_personas(s: Sesion, pf: pd.DataFrame) -> None:
     recurrentes = int((por_persona > 1).sum())
     sin_anio = int(pf["año"].isna().sum()) if not pf.empty else 0
     st.markdown("#### 👥 Personas")
-    c = st.columns(6)
+    c = st.columns(5)
     ui.kpi("Personas únicas", unicas, "Cuenta cada persona una sola vez", contenedor=c[0])
     ui.kpi("Vinculaciones históricas", vinc, "Cada registro histórico", contenedor=c[1])
     ui.kpi("Personas recurrentes", recurrentes, "Con 2 o más vinculaciones", contenedor=c[2])
     ui.kpi("Vinculaciones por persona", (vinc / unicas) if unicas else None, "Promedio del filtro", contenedor=c[3], decimales=2)
     ui.kpi("Registros sin año", sin_anio, "No se asignan a ningún periodo", contenedor=c[4])
-    try:
-        disp = disponibilidad.disponibles(s)
-    except ErrorDatos:
-        disp = None
-    ui.kpi("Disponibles para vincular", disp, "Marca manual por persona" if disp is not None else "Se habilita con la migración V008",
-           contenedor=c[5], no_disponible=disp is None)
 
 
 def _kpis_vacantes(vf: pd.DataFrame) -> None:

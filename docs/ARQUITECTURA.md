@@ -68,7 +68,7 @@ con errores por fila antes de guardar y se pueden **deshacer** dentro de la sesi
 
 - Nunca se muestra `NaN`, `None` ni trazas de Python: faltantes → «Información no disponible»; errores → mensajes en español (`repositories/errores.py`).
 - Los años imputados y las instituciones balanceadas (V005) se **etiquetan** y hay interruptor para ver «solo años registrados».
-- «Vacantes vigentes» = estado Activa **y** sin fecha de cierre vencida (V007). «Disponibles para vincular» = marca manual (V008); sin ella, «No disponible».
+- «Vacantes vigentes» = estado Activa **y** sin fecha de cierre vencida (V007).
 
 ## Pruebas
 
