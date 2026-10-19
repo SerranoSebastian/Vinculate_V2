@@ -140,34 +140,36 @@ def _seccion_analisis(s: Sesion) -> None:
     por_persona = pf.groupby("id_persona_maestro").size()
     unicas, vinc = int(pf["id_persona_maestro"].nunique()), len(pf)
     c = st.columns(6)
-    ui.kpi("Personas únicas", unicas, contenedor=c[0])
-    ui.kpi("Vinculaciones", vinc, contenedor=c[1])
-    ui.kpi("Recurrentes", int((por_persona > 1).sum()), "2 o más vinculaciones", contenedor=c[2])
-    ui.kpi("Vinculaciones por persona", vinc / unicas if unicas else None, contenedor=c[3], decimales=2)
-    ui.kpi("Máximo por persona", int(por_persona.max()), contenedor=c[4])
-    ui.kpi("Sin año", int(pf["año"].isna().sum()), "No se asignan a un periodo", contenedor=c[5])
-    ui.explicacion("Base de personas después de los filtros.",
-                   "Personas únicas = ID persona maestra; vinculaciones = cada fila histórica.",
-                   "Un promedio mayor a 1 indica recurrencia. «Sin año» no debe usarse para comparar periodos.")
+    ui.kpi("Personas únicas", unicas, contenedor=c[0], info="personas.personas_unicas")
+    ui.kpi("Vinculaciones", vinc, contenedor=c[1], info="personas.vinculaciones")
+    ui.kpi("Recurrentes", int((por_persona > 1).sum()), "2 o más vinculaciones", contenedor=c[2], info="personas.recurrentes")
+    ui.kpi("Vinculaciones por persona", vinc / unicas if unicas else None, contenedor=c[3], decimales=2, info="personas.vinculaciones_por_persona")
+    ui.kpi("Máximo por persona", int(por_persona.max()), contenedor=c[4], info="personas.maximo_por_persona")
+    ui.kpi("Sin año", int(pf["año"].isna().sum()), "No se asignan a un periodo", contenedor=c[5], info="personas.sin_anio")
     vista = st.segmented_control("Vista", ["Resumen", "Evolución anual", "Recurrencia", "Perfil"], default="Resumen",
                                  key="personas_vista", label_visibility="collapsed") or "Resumen"
     if vista == "Resumen":
         c1, c2 = st.columns(2)
         with c1:
             tipos = charts.conteo(agrupar_tipo_vinculacion(pf["vinculacion"]), "Tipo", "Vinculaciones")
+            ui.ayuda_grafica("personas.grafica_tipos")
             charts.mostrar(charts.barras_h(tipos, "Tipo", "Vinculaciones", "Vinculaciones por tipo"), "pa_tipos")
         with c2:
             dist = por_persona.value_counts().sort_index().reset_index()
             dist.columns = ["Vinculaciones por persona", "Personas"]
             dist["Grupo"] = dist["Vinculaciones por persona"].astype(str)
+            ui.ayuda_grafica("personas.grafica_frecuencia")
             charts.mostrar(charts.barras_v(dist, "Grupo", "Personas", "Frecuencia de vinculaciones por persona"), "pa_freq")
         top = resumen_vinculaciones_por_persona(pf).head(15)
         st.subheader("Personas con más vinculaciones")
+        ui.ayuda_grafica("personas.tabla_top", fila_propia=True)
         ui.tabla(top, ["id_persona_maestro", "nombre", "total_vinculaciones"],
                  {"id_persona_maestro": "ID", "nombre": "Nombre", "total_vinculaciones": "Vinculaciones"})
     elif vista == "Evolución anual":
+        ui.ayuda_grafica("personas.grafica_evolucion")
         if paneles.evolucion_anual(pf, "pa_evo"):
             st.subheader("Indicadores anuales")
+            ui.ayuda_grafica("personas.tabla_anual", fila_propia=True)
             ui.tabla(paneles.tabla_anual(pf))
             sin = int(pf["año"].isna().sum())
             ui.nota(f"Además hay {sin:,} vinculación(es) sin año; se conservan y no se asignan a ningún periodo.")
@@ -177,9 +179,10 @@ def _seccion_analisis(s: Sesion) -> None:
         res = resumen_vinculaciones_por_persona(pf)
         rec = res[res["total_vinculaciones"] > 1]
         c = st.columns(3)
-        ui.kpi("Con 1 vinculación", int((res["total_vinculaciones"] == 1).sum()), contenedor=c[0])
-        ui.kpi("Con 2 o más", len(rec), contenedor=c[1])
-        ui.kpi("% recurrentes", ui.fmt_pct(len(rec), len(res)), contenedor=c[2])
+        ui.kpi("Con 1 vinculación", int((res["total_vinculaciones"] == 1).sum()), contenedor=c[0], info="personas.con_1_vinculacion")
+        ui.kpi("Con 2 o más", len(rec), contenedor=c[1], info="personas.con_2_o_mas")
+        ui.kpi("% recurrentes", ui.fmt_pct(len(rec), len(res)), contenedor=c[2], info="personas.porcentaje_recurrentes")
+        ui.ayuda_grafica("personas.tabla_recurrentes", fila_propia=True)
         ui.tabla(rec, ["id_persona_maestro", "nombre", "total_vinculaciones", "primera_fecha", "ultima_fecha"],
                  {"id_persona_maestro": "ID", "nombre": "Nombre", "total_vinculaciones": "Vinculaciones",
                   "primera_fecha": "Primera", "ultima_fecha": "Última"}, fechas=("primera_fecha", "ultima_fecha"), altura=420)
@@ -188,8 +191,10 @@ def _seccion_analisis(s: Sesion) -> None:
         m = obtener_personas_maestras(pf)
         c1, c2 = st.columns(2)
         with c1:
+            ui.ayuda_grafica("personas.grafica_sexo")
             charts.mostrar(charts.dona(charts.conteo(m["sexo"], "Sexo", "Personas"), "Sexo", "Personas", "Personas únicas por sexo"), "pa_sexo")
         with c2:
+            ui.ayuda_grafica("personas.grafica_escolaridad")
             esc = charts.conteo(m["escolaridad"], "Escolaridad", "Personas", top=10)
             charts.mostrar(charts.barras_h(esc, "Escolaridad", "Personas", "Escolaridad"), "pa_esc")
         conteo = m["municipio"].map(normalizar_ubicacion_mexico).value_counts()
@@ -198,18 +203,18 @@ def _seccion_analisis(s: Sesion) -> None:
         con_datos = int((muni["Personas"] > 0).sum())
         st.subheader(f"Los 60 municipios de Tlaxcala ({con_datos} con personas)")
         with st.expander("Ver los 60 municipios (incluye los que tienen cero)"):
+            ui.ayuda_grafica("personas.grafica_municipios", fila_propia=True)
             charts.mostrar(charts.barras_h(muni.sort_values("Personas", ascending=False), "Municipio", "Personas",
                                            "Personas únicas por municipio de Tlaxcala", alto=1500), "pa_mun60")
         c3, c4 = st.columns(2)
         with c3:
+            ui.ayuda_grafica("personas.grafica_instituciones")
             charts.mostrar(charts.barras_h(charts.conteo(m["Institución"], "Institución", "Personas", top=12),
                                            "Institución", "Personas", "Instituciones"), "pa_inst")
         with c4:
+            ui.ayuda_grafica("personas.grafica_carreras")
             charts.mostrar(charts.barras_h(charts.conteo(m["carrera"], "Carrera", "Personas", top=12),
                                            "Carrera", "Personas", "Carreras"), "pa_car")
-        ui.explicacion("Una fila por persona maestra con su dato más reciente y completo.",
-                       "Perfil de las personas únicas: sexo, escolaridad, territorio, institución y carrera.",
-                       "Cero en un municipio significa que no hay personas registradas ahí con el filtro actual.")
 
 
 # ------------------------------------------------------------------ directorio
@@ -230,6 +235,7 @@ def _seccion_directorio(s: Sesion, preseleccion: str | None) -> None:
     vista = vista.sort_values(["nombre", "id_persona_maestro"]).reset_index(drop=True)
     st.caption(f"{len(vista)} persona(s)" + (f" · mostrando las primeras {MAX_FILAS_BUSQUEDA}" if len(vista) > MAX_FILAS_BUSQUEDA else ""))
     tabla = vista.head(MAX_FILAS_BUSQUEDA)
+    ui.ayuda_grafica("personas.tabla_directorio", fila_propia=True)
     idx = ui.tabla(tabla, ["nombre", "id_persona_maestro", "municipio", "carrera", "Institución", "total_vinculaciones", "ultima_fecha"],
                    {"nombre": "Nombre", "id_persona_maestro": "ID", "municipio": "Municipio", "carrera": "Carrera",
                     "total_vinculaciones": "Vinculaciones", "ultima_fecha": "Última fecha"}, fechas=("ultima_fecha",),
@@ -331,9 +337,9 @@ def _seccion_carga(s: Sesion) -> None:
             st.dataframe(pd.DataFrame(prev.errores), hide_index=True, width="stretch")
         return
     c = st.columns(3)
-    ui.kpi("Filas recibidas", prev.recibidos, contenedor=c[0])
-    ui.kpi("Se guardarán (nuevos)", prev.nuevos, contenedor=c[1])
-    ui.kpi("Se omitirán (ya existen / repetidos)", prev.omitidos, contenedor=c[2])
+    ui.kpi("Filas recibidas", prev.recibidos, contenedor=c[0], info="personas.carga_recibidas")
+    ui.kpi("Se guardarán (nuevos)", prev.nuevos, contenedor=c[1], info="personas.carga_nuevas")
+    ui.kpi("Se omitirán (ya existen / repetidos)", prev.omitidos, contenedor=c[2], info="personas.carga_omitidas")
     for aviso in prev.avisos:
         st.warning(aviso)
     if prev.nuevos == 0:
@@ -370,6 +376,7 @@ def _seccion_editar(s: Sesion, preseleccion: str | None) -> None:
     if res.empty:
         ui.vacio("Ningún registro coincide con la búsqueda.")
         return
+    ui.ayuda_grafica("personas.tabla_editar", fila_propia=True)
     idx = ui.tabla(res, ["id_persona", "nombre", "id_persona_maestro", "vinculacion", "fecha_registro", "municipio"],
                    {"id_persona": "ID de registro", "nombre": "Nombre", "id_persona_maestro": "ID persona", "vinculacion": "Tipo",
                     "fecha_registro": "Fecha", "municipio": "Municipio"}, fechas=("fecha_registro",), altura=240,

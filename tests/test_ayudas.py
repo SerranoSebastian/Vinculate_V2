@@ -11,12 +11,13 @@ RAIZ = Path(__file__).resolve().parents[1] / "vinculate"
 PALABRAS_PROHIBIDAS = ["canaliz", "derivad", "revisar", "revisión", "pendiente", "falta", "migración", "supabase"]
 
 
-def _claves_usadas(archivo: str) -> set[str]:
-    codigo = (RAIZ / "vistas" / archivo).read_text(encoding="utf-8")
+def _claves_usadas(archivos: str) -> set[str]:
+    codigo = "\n".join((RAIZ / "vistas" / a).read_text(encoding="utf-8") for a in archivos.split(","))
     return set(re.findall(r'(?:\binfo=|ayuda_grafica\(|ayudas\.texto\()"([\w.]+)"', codigo))
 
 
-@pytest.mark.parametrize("archivo,prefijo,minimo", [("inicio.py", "inicio.", 25), ("mapa.py", "mapa.", 14), ("ridet.py", "ridet.", 19)])
+@pytest.mark.parametrize("archivo,prefijo,minimo", [("inicio.py", "inicio.", 25), ("mapa.py", "mapa.", 14), ("ridet.py", "ridet.", 19),
+                                                     ("personas.py,ficha.py", "personas.", 29)])
 def test_cada_ayuda_usada_tiene_texto_y_cada_texto_se_usa(archivo, prefijo, minimo):
     usadas = _claves_usadas(archivo)
     assert len(usadas) >= minimo

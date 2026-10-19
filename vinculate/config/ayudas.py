@@ -291,6 +291,142 @@ No mide empleo ni vacantes.""",
 Cada vacante se ubica según la región asignada a su empresa. «Pendiente de asignar» agrupa las vacantes de empresas a las que todavía no se les puede asignar región.
 
 Refleja las vacantes registradas, no el empleo real de cada región.""",
+
+    # ------------------------------------------------------------------ PERSONAS · Análisis · indicadores
+    "personas.personas_unicas": """Es el número de personas distintas que han tenido al menos una vinculación con el programa.
+
+Cada persona se cuenta una sola vez, aunque haya tenido varias vinculaciones o aparezca en varios años.
+
+Los datos vienen de la base de personas de Vincúlate, que incluye los registros capturados en el sistema y los históricos cargados de años anteriores. El número cambia según los filtros que se elijan arriba.""",
+
+    "personas.vinculaciones": """Es el total de vinculaciones que cumplen los filtros elegidos arriba. Cada vinculación cuenta una vez.
+
+Si una misma persona tuvo 2 vinculaciones, aquí suma 2. Por eso este número es mayor que el de personas únicas.""",
+
+    "personas.recurrentes": """Son las personas que han tenido 2 o más vinculaciones.
+
+Se obtienen contando cuántas vinculaciones tiene cada persona y quedándose con quienes tienen más de una. Muestra cuánta gente vuelve a utilizar el programa.""",
+
+    "personas.vinculaciones_por_persona": """Es el promedio de vinculaciones que tiene cada persona.
+
+Se calcula dividiendo el total de vinculaciones entre las personas únicas. Un valor cercano a 1 indica que la mayoría de las personas tuvo una sola vinculación; un valor mayor indica que muchas regresan.""",
+
+    "personas.maximo_por_persona": """Es el mayor número de vinculaciones que tiene una sola persona dentro de los filtros elegidos.
+
+Por ejemplo, si dice 4, significa que al menos una persona ha tenido 4 vinculaciones.""",
+
+    "personas.sin_anio": """Son vinculaciones históricas cuya fecha original no indica el año.
+
+Por eso no se pueden ubicar en un periodo específico y no aparecen en las gráficas por año. Sí se incluyen en los totales generales.""",
+
+    # ------------------------------------------------------------------ PERSONAS · Análisis · Resumen
+    "personas.grafica_tipos": """Muestra cuántas vinculaciones hay de cada tipo. Cada barra es un tipo y su número es la cantidad de vinculaciones de ese tipo.
+
+Inserción laboral reúne las vinculaciones de atención e inserción laboral.
+Inserción Educativa reúne las vinculaciones de prácticas profesionales y servicio social.
+
+Cada tipo se muestra por separado en las tablas de datos. Las vinculaciones que no tienen tipo registrado aparecen como «Indefinido».""",
+
+    "personas.grafica_frecuencia": """Muestra cuántas personas han tenido 1, 2, 3 o más vinculaciones.
+
+El número de abajo de cada barra es la cantidad de vinculaciones que tiene una persona. El número sobre la barra es cuántas personas están en ese grupo. La barra del 1 son quienes han tenido una sola vinculación; las demás son quienes han regresado al programa.""",
+
+    "personas.tabla_top": """Lista, de mayor a menor, a las 15 personas con más vinculaciones.
+
+ID: identificador de la persona en Vincúlate.
+Nombre: nombre registrado.
+Vinculaciones: cuántas vinculaciones tiene.""",
+
+    # ------------------------------------------------------------------ PERSONAS · Análisis · Evolución anual
+    "personas.grafica_evolucion": """Muestra cómo ha crecido el programa año con año.
+
+Las barras indican cuántas vinculaciones hubo en cada año. Se suma una por cada vinculación, según el año en que ocurrió.
+
+La línea indica cuántas personas distintas fueron vinculadas ese año. Cada persona se cuenta una sola vez dentro del año.
+
+Si la línea sube de un año a otro, significa que el programa llegó a más personas.
+
+Barra roja: vinculaciones cuyo año viene registrado en el dato original.
+Barra rayada: vinculaciones cuyo año fue estimado al organizar la información histórica. Se muestran con otro patrón para distinguirlas de las registradas.""",
+
+    "personas.tabla_anual": """Resume cada año con los mismos datos de la gráfica.
+
+Año: año de la vinculación.
+Personas únicas: personas distintas vinculadas ese año.
+Vinculaciones: total de vinculaciones de ese año.
+Promedio por persona: vinculaciones entre personas únicas de ese año.
+Personas recurrentes: personas con 2 o más vinculaciones dentro de ese año.
+
+Solo incluye las vinculaciones que tienen año.""",
+
+    # ------------------------------------------------------------------ PERSONAS · Análisis · Recurrencia
+    "personas.con_1_vinculacion": """Es el número de personas que han tenido una sola vinculación dentro de los filtros elegidos.""",
+
+    "personas.con_2_o_mas": """Es el número de personas que han tenido 2 o más vinculaciones dentro de los filtros elegidos.""",
+
+    "personas.porcentaje_recurrentes": """Es qué parte de las personas únicas ha tenido 2 o más vinculaciones. Se calcula dividiendo las personas con 2 o más vinculaciones entre el total de personas únicas.""",
+
+    "personas.tabla_recurrentes": """Lista a las personas que han tenido 2 o más vinculaciones, de mayor a menor.
+
+ID: identificador de la persona.
+Vinculaciones: cuántas tiene.
+Primera y Última: fecha de su primera y de su última vinculación. Si el registro histórico no tiene fecha, aparece «Indefinido».""",
+
+    # ------------------------------------------------------------------ PERSONAS · Análisis · Perfil
+    "personas.grafica_sexo": """Muestra qué porcentaje de las personas vinculadas son mujeres y qué porcentaje son hombres.
+
+Cada persona se cuenta una sola vez. Los datos vienen del sexo registrado en la base de personas. Si un mismo valor está escrito de varias formas (por ejemplo «MASCULINO» y «Masculino»), se cuenta junto.
+
+Quienes no tienen ese dato aparecen como «Indefinido».""",
+
+    "personas.grafica_escolaridad": """Muestra el nivel de estudios de las personas vinculadas.
+
+Cada barra es un nivel de escolaridad y su número es la cantidad de personas distintas en ese nivel. Cada persona se cuenta una sola vez. Quienes no tienen ese dato aparecen como «Indefinido».""",
+
+    "personas.grafica_municipios": """Muestra los 60 municipios de Tlaxcala, incluidos los que no tienen personas.
+
+Cada barra es un municipio y su número es la cantidad de personas distintas que viven ahí. Cada persona se cuenta una sola vez. Un cero significa que no hay personas registradas en ese municipio con los filtros elegidos.""",
+
+    "personas.grafica_instituciones": """Muestra de qué instituciones educativas vienen las personas vinculadas.
+
+Cada barra es una institución y su número es la cantidad de personas distintas de esa institución. Cada persona se cuenta una sola vez. Se muestran las 12 instituciones con más personas. Quienes no tienen ese dato aparecen como «Indefinido».""",
+
+    "personas.grafica_carreras": """Muestra qué carreras estudian o estudiaron las personas vinculadas.
+
+Cada barra es una carrera y su número es la cantidad de personas distintas de esa carrera. Cada persona se cuenta una sola vez. Se muestran las 12 carreras con más personas. Quienes no tienen ese dato aparecen como «Indefinido».""",
+
+    # ------------------------------------------------------------------ PERSONAS · Directorio y ficha
+    "personas.tabla_directorio": """Lista a las personas registradas, con una fila por persona y sus datos más recientes.
+
+ID: identificador de la persona en Vincúlate.
+Vinculaciones: cuántas vinculaciones tiene.
+Última fecha: fecha de su vinculación más reciente.
+
+Se pueden buscar por nombre, ID, correo o teléfono. Al elegir una fila se abre la ficha completa de la persona.""",
+
+    "personas.ficha_vinculaciones": """Es el número de vinculaciones que tiene esta persona en su historial.""",
+
+    "personas.ficha_tipos": """Es el número de tipos de vinculación distintos que ha tenido esta persona. Por ejemplo, si tuvo una de servicio social y otra de inserción laboral, son 2 tipos.""",
+
+    "personas.ficha_primera_fecha": """Es la fecha de la vinculación más antigua de esta persona que tiene fecha registrada.""",
+
+    "personas.ficha_ultima_fecha": """Es la fecha de la vinculación más reciente de esta persona que tiene fecha registrada.""",
+
+    # ------------------------------------------------------------------ PERSONAS · Carga Excel/CSV
+    "personas.carga_recibidas": """Es el total de filas que trae el archivo subido.""",
+
+    "personas.carga_nuevas": """Es el número de filas que se agregarán como registros nuevos al presionar el botón de guardar.""",
+
+    "personas.carga_omitidas": """Es el número de filas que no se guardarán porque su ID ya existe en la base o porque están repetidas en el archivo. Cargar un archivo nunca sobrescribe un registro existente.""",
+
+    # ------------------------------------------------------------------ PERSONAS · Editar / eliminar
+    "personas.tabla_editar": """Lista los registros que coinciden con la búsqueda (hasta 200). Cada fila es una vinculación.
+
+ID de registro: identificador de esa vinculación.
+ID persona: identificador de la persona a la que pertenece.
+Tipo: tipo de vinculación.
+
+Al elegir una fila se puede editar o eliminar ese registro.""",
 }
 
 

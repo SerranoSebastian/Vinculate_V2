@@ -76,10 +76,10 @@ def contenido(sesion: Sesion, id_maestro: str) -> None:
 
     fechas = hist["fecha_registro"].dropna()
     c = st.columns(4)
-    ui.kpi("Vinculaciones", len(hist), contenedor=c[0])
-    ui.kpi("Tipos distintos", int(hist["vinculacion"].replace("", pd.NA).nunique()), contenedor=c[1])
-    ui.kpi("Primera fecha", fecha_visible(fechas.min()) if len(fechas) else SIN_DATO, contenedor=c[2], no_disponible=not len(fechas))
-    ui.kpi("Última fecha", fecha_visible(fechas.max()) if len(fechas) else SIN_DATO, contenedor=c[3], no_disponible=not len(fechas))
+    ui.kpi("Vinculaciones", len(hist), contenedor=c[0], info="personas.ficha_vinculaciones")
+    ui.kpi("Tipos distintos", int(hist["vinculacion"].replace("", pd.NA).nunique()), contenedor=c[1], info="personas.ficha_tipos")
+    ui.kpi("Primera fecha", fecha_visible(fechas.min()) if len(fechas) else SIN_DATO, contenedor=c[2], no_disponible=not len(fechas), info="personas.ficha_primera_fecha")
+    ui.kpi("Última fecha", fecha_visible(fechas.max()) if len(fechas) else SIN_DATO, contenedor=c[3], no_disponible=not len(fechas), info="personas.ficha_ultima_fecha")
 
     t1, t2, t3, t4 = st.tabs(["Perfil", "Historial", "Seguimientos con empresas", "Calidad de datos"])
     with t1:

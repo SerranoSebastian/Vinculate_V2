@@ -78,3 +78,8 @@
 - Las cinco vistas de RIDET (General, Regiones, Empresas y vacantes, Estadísticas) tienen su ❓: 11 indicadores, 2 gráficas y las tablas e imágenes del documento. Se quitaron los recuadros «Fuente, significado e interpretación».
 - Textos en `vinculate/config/ayudas.py`, claves que empiezan con `ridet.`. La explicación de los criterios de asignación de región (por municipio, coincidencia exacta, alias, parcial, ambigua) está en `ridet.emp_tabla`.
 - La observación sobre los municipios del documento (Altzayanca) y las etiquetas de criterio de la tabla no se modificaron.
+
+## Ayudas ❓ en Personas
+- Personas ya tiene ❓ en el Análisis completo (Resumen, Evolución anual, Recurrencia y Perfil: 6+3+2+4+5 elementos), en la tabla del Directorio, en los 4 indicadores de la ficha de persona, en los 3 indicadores de la Carga Excel/CSV y en la tabla de Editar / eliminar. Se quitaron los recuadros «Fuente, significado e interpretación» de esta página.
+- Textos en `vinculate/config/ayudas.py`, claves que empiezan con `personas.`. Las pruebas (`tests/test_ayudas.py`) revisan `personas.py` y `ficha.py`.
+- Los formularios de Nueva vinculación y Editar no llevan ❓ porque no muestran cifras.
