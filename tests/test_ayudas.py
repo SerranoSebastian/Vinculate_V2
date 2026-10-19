@@ -17,7 +17,8 @@ def _claves_usadas(archivos: str) -> set[str]:
 
 
 @pytest.mark.parametrize("archivo,prefijo,minimo", [("inicio.py", "inicio.", 25), ("mapa.py", "mapa.", 14), ("ridet.py", "ridet.", 19),
-                                                     ("personas.py,ficha.py", "personas.", 29)])
+                                                     ("personas.py,ficha.py", "personas.", 29),
+                                                     ("vacantes.py", "vacantes.", 33)])
 def test_cada_ayuda_usada_tiene_texto_y_cada_texto_se_usa(archivo, prefijo, minimo):
     usadas = _claves_usadas(archivo)
     assert len(usadas) >= minimo

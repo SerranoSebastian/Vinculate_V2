@@ -83,3 +83,9 @@
 - Personas ya tiene ❓ en el Análisis completo (Resumen, Evolución anual, Recurrencia y Perfil: 6+3+2+4+5 elementos), en la tabla del Directorio, en los 4 indicadores de la ficha de persona, en los 3 indicadores de la Carga Excel/CSV y en la tabla de Editar / eliminar. Se quitaron los recuadros «Fuente, significado e interpretación» de esta página.
 - Textos en `vinculate/config/ayudas.py`, claves que empiezan con `personas.`. Las pruebas (`tests/test_ayudas.py`) revisan `personas.py` y `ficha.py`.
 - Los formularios de Nueva vinculación y Editar no llevan ❓ porque no muestran cifras.
+
+## Ayudas ❓ · Vacantes y empresas (2026-10-19)
+
+- Textos en `vinculate/config/ayudas.py`, claves `vacantes.*` (33): KPIs de Análisis, Empresas, Carga y Vigencia; gráficas, mapa de calor, informe automático, tablas (Buscador, Empresas, Editar, Vigencia), captura de ubicación, editor de coordenadas, formulario de alta y umbral de vigencia.
+- Se quitó el expander `ui.explicacion` de Análisis. Sin cambios de base de datos ni de permisos.
+- `tests/test_ayudas.py` valida que cada clave usada tenga texto, que todo texto definido se use y que no aparezcan palabras de pendientes/revisión.

@@ -427,6 +427,146 @@ ID persona: identificador de la persona a la que pertenece.
 Tipo: tipo de vinculación.
 
 Al elegir una fila se puede editar o eliminar ese registro.""",
+
+    # ------------------------------------------------------------------ VACANTES · Análisis (indicadores)
+    "vacantes.kpi_vacantes": """Es el número de puestos de trabajo registrados que cumplen los filtros elegidos. Cada registro es un puesto publicado por una empresa.
+
+Una vacante no es una contratación: es una oferta de empleo.""",
+
+    "vacantes.kpi_vigentes": """Son las vacantes que, con los filtros elegidos, siguen abiertas.
+
+Se cuenta una vacante como vigente cuando su estado es «Activa» y su fecha de cierre todavía no ha pasado (o no tiene fecha de cierre).""",
+
+    "vacantes.kpi_activas": """Son las vacantes cuyo estado es «Activa» con los filtros elegidos.
+
+El estado lo captura el equipo al registrar o editar la vacante. Como estas vacantes no tienen fecha de cierre, no se puede confirmar si siguen abiertas hoy.""",
+
+    "vacantes.kpi_empresas": """Es el número de empresas distintas que tienen al menos una vacante con los filtros elegidos. Una empresa con muchas vacantes se cuenta una sola vez.""",
+
+    "vacantes.kpi_puestos": """Es el número de tipos de puesto diferentes entre las vacantes filtradas. Los nombres escritos de distintas maneras se agrupan en un puesto normalizado para contarlos como uno solo.""",
+
+    "vacantes.kpi_meses": """Es el número de meses distintos en los que se publicó al menos una vacante, según la fecha de publicación. Las vacantes sin fecha no se consideran.""",
+
+    # ------------------------------------------------------------------ VACANTES · Análisis (gráficas)
+    "vacantes.grafica_empresas": """Muestra las 12 empresas que tienen más vacantes registradas con los filtros elegidos. Cada barra es una empresa y su largo es el número de vacantes.
+
+Sirve para ver qué empresas concentran la oferta de empleo.""",
+
+    "vacantes.grafica_puestos": """Muestra los 12 puestos que más se repiten entre las vacantes filtradas. Los nombres originales se agrupan en un puesto normalizado para poder compararlos.
+
+Sirve para saber qué perfiles piden más las empresas.""",
+
+    "vacantes.grafica_situacion": """Reparte las vacantes filtradas según su situación:
+
+Vigente: estado «Activa» y fecha de cierre vigente o sin fecha de cierre.
+Activa con cierre vencido: estado «Activa», pero su fecha de cierre ya pasó.
+Inactiva: vacante que ya no está abierta.
+
+Cada porción es el porcentaje del total de vacantes.""",
+
+    "vacantes.grafica_categorias": """Muestra las 10 categorías de puesto con más vacantes. Una categoría es un grupo amplio de puestos parecidos (por ejemplo, operativos o administrativos).
+
+Sirve para ver en qué tipo de trabajo se concentra la oferta.""",
+
+    "vacantes.grafica_fecha": """Muestra cuántas vacantes se publicaron cada día, según la fecha de publicación registrada.
+
+Sirve para ver los días con más movimiento. Solo se incluyen vacantes que tienen fecha.""",
+
+    "vacantes.grafica_mes": """Muestra cuántas vacantes se registraron en cada mes, según su fecha de publicación.
+
+Sirve para comparar la oferta de un mes con otro. Solo se incluyen vacantes que tienen fecha.""",
+
+    "vacantes.grafica_calor": """Cruza empresas (filas) con meses (columnas). El número de cada cuadro es la cantidad de vacantes que esa empresa publicó en ese mes, y los colores más intensos indican más vacantes.
+
+Incluye las 12 empresas con más vacantes. Solo se consideran vacantes con fecha.""",
+
+    "vacantes.grafica_concentracion": """Muestra qué porcentaje del total de vacantes filtradas tiene cada una de las 10 empresas con más vacantes.
+
+Si pocas empresas suman un porcentaje alto, la oferta depende de ellas. El porcentaje se calcula contra todas las vacantes del filtro, no solo contra las 10 mostradas.""",
+
+    "vacantes.informe": """Es un resumen escrito que se genera solo con los filtros elegidos: cuántas vacantes y empresas hay, la empresa con más vacantes, el puesto más frecuente y la fecha con más publicaciones.
+
+Describe lo registrado; no explica las causas ni representa todo el mercado laboral.""",
+
+    "vacantes.tabla_buscador": """Lista las vacantes que cumplen los filtros y la búsqueda escrita. La búsqueda encuentra palabras en la empresa, el puesto, los requisitos, los beneficios, la descripción y el ID, sin importar acentos ni mayúsculas.
+
+ID Vacante: identificador de la vacante.
+Fecha: día en que se publicó.
+Tipo de Vacante: puesto normalizado.
+Estado: Activa o Inactiva.
+Cierre: fecha en que la vacante termina, si se registró.
+
+Se ordena de la más reciente a la más antigua.""",
+
+    # ------------------------------------------------------------------ VACANTES · Empresas
+    "vacantes.emp_total": """Es el número de empresas distintas que tienen al menos una vacante registrada.""",
+
+    "vacantes.emp_con_municipio": """Es el número de empresas de la tabla que ya tienen un municipio registrado. El municipio se captura a mano en este mismo apartado.""",
+
+    "vacantes.emp_sin_municipio": """Es el número de empresas de la tabla que todavía no tienen municipio registrado. Estas empresas aparecen como «Indefinido» en el mapa por municipio.""",
+
+    "vacantes.emp_sectores": """Es el número de sectores económicos distintos a los que pertenecen las empresas de la tabla (por ejemplo, textil o comercio).""",
+
+    "vacantes.tabla_empresas": """Tiene una fila por empresa con vacantes registradas.
+
+Vacantes: total de vacantes de la empresa.
+Vigentes: vacantes que siguen abiertas.
+Puestos distintos: tipos de puesto diferentes que ha ofrecido.
+Municipio: municipio donde se ubica, si se capturó.
+Fuente de ubicación: de dónde viene el dato del municipio.""",
+
+    "vacantes.captura_ubicacion": """Sirve para registrar en qué municipio está una empresa, y opcionalmente su dirección y código postal.
+
+Las empresas sin municipio aparecen primero en la lista. El dato se guarda tal como se captura, sin buscarlo ni estimarlo de forma automática.""",
+
+    "vacantes.editor_coordenadas": """Sirve para registrar la ubicación exacta de cada empresa, con latitud y longitud, y así dibujarla en el Mapa territorial.
+
+Las coordenadas se pueden copiar desde Google Maps (clic derecho sobre el lugar) y pegarse en la columna «Pegar (lat, lon)», o escribirse por separado. En Tlaxcala, la latitud ronda 19.3 y la longitud ronda −98.2 (con signo menos).
+
+Si no se conoce la ubicación se deja vacío; ningún dato se calcula ni se estima. Solo se guardan las filas que cambiaron.""",
+
+    # ------------------------------------------------------------------ VACANTES · Nueva vacante
+    "vacantes.alta_formulario": """Sirve para registrar una vacante nueva. Los campos marcados con * son obligatorios.
+
+Cada registro corresponde a un solo puesto. El nombre del puesto se elige de un catálogo para que se agrupe igual que el resto de las vacantes, y se conserva también el texto original capturado. La vacante queda registrada con un ID nuevo.""",
+
+    # ------------------------------------------------------------------ VACANTES · Carga Excel/CSV
+    "vacantes.carga_recibidas": """Es el total de filas que trae el archivo subido.""",
+
+    "vacantes.carga_nuevas": """Es el número de filas que se agregarán como vacantes nuevas al presionar el botón de guardar.""",
+
+    "vacantes.carga_omitidas": """Es el número de filas que no se guardarán porque su ID ya existe en la base o porque están repetidas en el archivo. Cargar un archivo nunca sobrescribe una vacante existente.""",
+
+    # ------------------------------------------------------------------ VACANTES · Editar / eliminar
+    "vacantes.tabla_editar": """Lista las vacantes que coinciden con la búsqueda por empresa, puesto o ID (hasta 200).
+
+ID Vacante: identificador de la vacante.
+Fecha: día en que se publicó.
+Tipo de Vacante: puesto normalizado.
+Estado: Activa o Inactiva.
+
+Al elegir una fila se puede editar o eliminar esa vacante.""",
+
+    # ------------------------------------------------------------------ VACANTES · Vigencia
+    "vacantes.vigencia_umbral": """Define cuántos días de antigüedad debe tener una vacante activa para aparecer en la lista. Por ejemplo, con 180 días se muestran las vacantes activas publicadas hace más de 180 días.
+
+Solo cambia lo que se muestra; no modifica ninguna vacante.""",
+
+    "vacantes.vigencia_activas": """Es el total de vacantes cuyo estado es «Activa», sin importar cuánto tiempo llevan publicadas.""",
+
+    "vacantes.vigencia_vencidas": """Son las vacantes activas publicadas hace más días que el valor elegido arriba y que no tienen una fecha de cierre vigente. Se consideran posiblemente vencidas porque es probable que ya no estén abiertas, pero el sistema no lo confirma.
+
+También se incluyen las activas que no tienen fecha de publicación.""",
+
+    "vacantes.vigencia_con_cierre": """Es el número de vacantes que tienen registrada una fecha de cierre, es decir, el día en que la oferta termina.""",
+
+    "vacantes.tabla_vigencia": """Lista las vacantes posiblemente vencidas, de la más antigua a la más reciente.
+
+ID Vacante: identificador de la vacante.
+Fecha: día en que se publicó.
+Estado: Activa o Inactiva.
+
+Desde aquí se pueden marcar como Inactivas, con confirmación previa. No se elimina ninguna vacante.""",
 }
 
 

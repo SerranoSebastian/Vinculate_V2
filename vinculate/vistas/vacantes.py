@@ -94,33 +94,34 @@ def _seccion_analisis(s: Sesion) -> None:
     total = len(vf)
     con_cierre = tiene_vigencia(vf)
     c = st.columns(5)
-    ui.kpi("Vacantes", total, "Puestos registrados", contenedor=c[0])
+    ui.kpi("Vacantes", total, "Puestos registrados", contenedor=c[0], info="vacantes.kpi_vacantes")
     if con_cierre:
-        ui.kpi("Vigentes", int(vigentes_mask(vf).sum()), "Activas y sin cierre vencido", contenedor=c[1])
+        ui.kpi("Vigentes", int(vigentes_mask(vf).sum()), "Activas y sin cierre vencido", contenedor=c[1], info="vacantes.kpi_vigentes")
     else:
-        ui.kpi("Activas", int(vf["Estado"].eq("Activa").sum()), "Vigencia no verificable (falta fecha de cierre)", contenedor=c[1])
-    ui.kpi("Empresas", int(vf["Empresa"].nunique()), contenedor=c[2])
-    ui.kpi("Puestos distintos", int(vf["Tipo de Vacante"].nunique()), contenedor=c[3])
-    ui.kpi("Meses con publicación", int(vf["Mes"].nunique()), contenedor=c[4])
-    ui.explicacion("Base de vacantes después de los filtros.",
-                   "Cada registro es un puesto publicado. Vigente = Activa y sin fecha de cierre vencida.",
-                   "Una vacante no equivale a una contratación. Si no hay fecha de cierre, «Activa» no garantiza que siga abierta.")
+        ui.kpi("Activas", int(vf["Estado"].eq("Activa").sum()), "Vigencia no verificable (falta fecha de cierre)", contenedor=c[1], info="vacantes.kpi_activas")
+    ui.kpi("Empresas", int(vf["Empresa"].nunique()), contenedor=c[2], info="vacantes.kpi_empresas")
+    ui.kpi("Puestos distintos", int(vf["Tipo de Vacante"].nunique()), contenedor=c[3], info="vacantes.kpi_puestos")
+    ui.kpi("Meses con publicación", int(vf["Mes"].nunique()), contenedor=c[4], info="vacantes.kpi_meses")
     vista = st.segmented_control("Vista", ["Resumen", "Tiempo", "Concentración", "Buscador"], default="Resumen",
                                  key="vac_vista", label_visibility="collapsed") or "Resumen"
     if vista == "Resumen":
         c1, c2 = st.columns(2)
         with c1:
+            ui.ayuda_grafica("vacantes.grafica_empresas", fila_propia=False)
             charts.mostrar(charts.barras_h(charts.conteo(vf["Empresa"], "Empresa", "Vacantes", top=12), "Empresa", "Vacantes",
                                            "Empresas con más vacantes"), "va_emp")
         with c2:
+            ui.ayuda_grafica("vacantes.grafica_puestos", fila_propia=False)
             charts.mostrar(charts.barras_h(charts.conteo(vf["Tipo de Vacante"], "Puesto", "Vacantes", top=12), "Puesto", "Vacantes",
                                            "Puestos más frecuentes"), "va_pue")
         c3, c4 = st.columns(2)
         with c3:
             sit = clasificar_vigencia(vf).value_counts().rename_axis("Situación").reset_index(name="Vacantes")
+            ui.ayuda_grafica("vacantes.grafica_situacion", fila_propia=False)
             charts.mostrar(charts.dona(sit, "Situación", "Vacantes", "Situación de las vacantes"), "va_sit")
         with c4:
             cat = charts.conteo(vf["Categoría de Puesto"], "Categoría", "Vacantes", top=10)
+            ui.ayuda_grafica("vacantes.grafica_categorias", fila_propia=False)
             charts.mostrar(charts.barras_h(cat, "Categoría", "Vacantes", "Categorías de puesto"), "va_cat")
     elif vista == "Tiempo":
         con_fecha = vf[vf["Fecha"].notna()]
@@ -128,13 +129,16 @@ def _seccion_analisis(s: Sesion) -> None:
             ui.vacio("Las vacantes del filtro no tienen fecha.")
         else:
             dia = con_fecha.groupby("Fecha").size().reset_index(name="Vacantes").sort_values("Fecha")
+            ui.ayuda_grafica("vacantes.grafica_fecha", fila_propia=True)
             charts.mostrar(charts.area(dia, "Fecha", "Vacantes", "Publicaciones por fecha"), "va_dia")
             mes = con_fecha.groupby("Mes").size().reset_index(name="Vacantes").sort_values("Mes")
+            ui.ayuda_grafica("vacantes.grafica_mes", fila_propia=True)
             charts.mostrar(charts.barras_v(mes, "Mes", "Vacantes", "Vacantes registradas por mes"), "va_mes")
             top = con_fecha["Empresa"].value_counts().head(12).index
             tabla = pd.pivot_table(con_fecha[con_fecha["Empresa"].isin(top)], values="Tipo de Vacante", index="Empresa",
                                    columns="Mes", aggfunc="count", fill_value=0)
             if not tabla.empty:
+                ui.ayuda_grafica("vacantes.grafica_calor", fila_propia=True)
                 charts.mostrar(charts.calor(tabla, "Publicaciones por empresa y mes (12 empresas con más vacantes)"), "va_calor")
             sin_fecha = int(vf["Fecha"].isna().sum())
             if sin_fecha:
@@ -143,10 +147,12 @@ def _seccion_analisis(s: Sesion) -> None:
         pct = vf["Empresa"].value_counts(normalize=True).head(10).mul(100).reset_index()
         pct.columns = ["Empresa", "Porcentaje"]
         pct["Porcentaje"] = pct["Porcentaje"].round(1)
+        ui.ayuda_grafica("vacantes.grafica_concentracion", fila_propia=True)
         charts.mostrar(charts.barras_v(pct, "Empresa", "Porcentaje", "Concentración de vacantes por empresa (%)"), "va_conc")
         emp = vf["Empresa"].value_counts()
         with st.container(border=True):
             st.markdown("**Informe automático**")
+            ui.ayuda_grafica("vacantes.informe", fila_propia=True)
             f_top = vf["Fecha"].value_counts()
             st.markdown(
                 f"El filtro contiene **{total}** vacantes de **{emp.size}** empresas. La empresa con más presencia es "
@@ -167,6 +173,7 @@ def _seccion_analisis(s: Sesion) -> None:
         cols_t = ["ID Vacante", "Fecha", "Empresa", "Tipo de Vacante", "Tipo de Oportunidad", "Área de Oportunidad", "Estado"]
         if con_cierre:
             cols_t.append("fecha_cierre")
+        ui.ayuda_grafica("vacantes.tabla_buscador", fila_propia=True)
         ui.tabla(vista_df.sort_values("Fecha", ascending=False), cols_t, {"fecha_cierre": "Cierre"}, fechas=("Fecha", "fecha_cierre"), altura=420)
         ui.boton_exportar(s, "vacantes", vista_df, "vacantes", "vac_exp")
 
@@ -184,19 +191,22 @@ def _seccion_empresas(s: Sesion) -> None:
     total = len(res)
     ubicadas = int((res["Municipio"].astype(str).str.strip() != "").sum()) if total else 0
     c = st.columns(4)
-    ui.kpi("Empresas con vacantes", total, contenedor=c[0])
-    ui.kpi("Con municipio capturado", ubicadas if con_ubic else None, contenedor=c[1], no_disponible=not con_ubic,
+    ui.kpi("Empresas con vacantes", total, contenedor=c[0], info="vacantes.emp_total")
+    ui.kpi("Con municipio capturado", ubicadas if con_ubic else None, contenedor=c[1], no_disponible=not con_ubic, info="vacantes.emp_con_municipio",
            ayuda="" if con_ubic else "Requiere la migración V004")
-    ui.kpi("Sin municipio", (total - ubicadas) if con_ubic else None, "Pendientes de ubicar", contenedor=c[2], no_disponible=not con_ubic)
-    ui.kpi("Sectores", int(res["Sector"].replace("", pd.NA).nunique()) if total else 0, contenedor=c[3])
+    ui.kpi("Sin municipio", (total - ubicadas) if con_ubic else None, "Pendientes de ubicar", contenedor=c[2], no_disponible=not con_ubic,
+           info="vacantes.emp_sin_municipio")
+    ui.kpi("Sectores", int(res["Sector"].replace("", pd.NA).nunique()) if total else 0, contenedor=c[3], info="vacantes.emp_sectores")
     if not con_ubic:
         st.info("La ubicación de empresas todavía no está habilitada en la base (migración V004). Mientras tanto, el mapa por "
                 "municipio usa solo la información de personas, y nada se inventa para las empresas.")
+    ui.ayuda_grafica("vacantes.tabla_empresas", fila_propia=True)
     ui.tabla(res, ["Empresa", "Sector", "Vacantes", "Vigentes", "Puestos distintos", "Municipio", "Ubicación"],
              {"Ubicación": "Fuente de ubicación"}, altura=360)
     ui.boton_exportar(s, "vacantes", res, "empresas", "emp_exp")
     if con_ubic and s.puede("vacantes", "edit") and not res.empty:
         st.markdown("#### Capturar la ubicación de una empresa")
+        ui.ayuda_grafica("vacantes.captura_ubicacion", fila_propia=True)
         ui.nota("Registra solo el municipio (y opcionalmente dirección y código postal). No se geocodifica nada automáticamente.")
         pendientes = res[res["Municipio"].astype(str).str.strip() == ""]["Empresa"].tolist()
         todas = res["Empresa"].tolist()
@@ -228,6 +238,7 @@ def _seccion_empresas(s: Sesion) -> None:
 def _editor_coordenadas(s: Sesion, v: pd.DataFrame, cat: pd.DataFrame) -> None:
     """Edición rápida de latitud/longitud de todas las empresas (para el mapa). Guarda solo lo que cambió."""
     st.markdown("#### Coordenadas exactas (edición rápida)")
+    ui.ayuda_grafica("vacantes.editor_coordenadas", fila_propia=True)
     if not empresas.tiene_coordenadas(cat):
         st.info("La base todavía no tiene las columnas de latitud/longitud (migración V004). Aplícala en Supabase para capturar coordenadas.")
         return
@@ -267,6 +278,7 @@ def _seccion_alta(s: Sesion) -> None:
     extras = guardado.columnas_opcionales(s, "vacantes")
     st.markdown("Cada fila representa **un solo puesto**. El nombre del puesto se homologa para evitar variantes; "
                 "*Puesto original* conserva el texto capturado.")
+    ui.ayuda_grafica("vacantes.alta_formulario", fila_propia=True)
     ui.bloque_deshacer(s, "vacantes")
     with st.form("form_alta_vacante"):
         c1, c2 = st.columns(2)
@@ -343,9 +355,9 @@ def _seccion_carga(s: Sesion) -> None:
             st.dataframe(pd.DataFrame(prev.errores), hide_index=True, width="stretch")
         return
     c = st.columns(3)
-    ui.kpi("Filas recibidas", prev.recibidos, contenedor=c[0])
-    ui.kpi("Se guardarán (nuevas)", prev.nuevos, contenedor=c[1])
-    ui.kpi("Se omitirán (ya existen / repetidas)", prev.omitidos, contenedor=c[2])
+    ui.kpi("Filas recibidas", prev.recibidos, contenedor=c[0], info="vacantes.carga_recibidas")
+    ui.kpi("Se guardarán (nuevas)", prev.nuevos, contenedor=c[1], info="vacantes.carga_nuevas")
+    ui.kpi("Se omitirán (ya existen / repetidas)", prev.omitidos, contenedor=c[2], info="vacantes.carga_omitidas")
     for aviso in prev.avisos:
         st.warning(aviso)
     if prev.nuevos == 0:
@@ -377,6 +389,7 @@ def _seccion_editar(s: Sesion) -> None:
     if res.empty:
         ui.vacio("Ninguna vacante coincide.")
         return
+    ui.ayuda_grafica("vacantes.tabla_editar", fila_propia=True)
     idx = ui.tabla(res, ["ID Vacante", "Fecha", "Empresa", "Tipo de Vacante", "Estado"], fechas=("Fecha",), altura=240,
                    key="vedit_tabla", seleccionable=True)
     if idx is None:
@@ -447,6 +460,7 @@ def _seccion_vigencia(s: Sesion) -> None:
         return
     st.markdown("Las vacantes **Activas** que llevan mucho tiempo publicadas probablemente ya no están abiertas. Esta revisión las lista "
                 "para que decidas, **sin cambiar nada automáticamente**.")
+    ui.ayuda_grafica("vacantes.vigencia_umbral", fila_propia=True)
     dias = st.slider("Mostrar vacantes activas publicadas hace más de (días)", 30, 730, 180, step=30, key="vig_dias")
     limite = pd.Timestamp(date.today()) - pd.Timedelta(days=dias)
     activas = df[df["Estado"].eq("Activa")]
@@ -454,15 +468,16 @@ def _seccion_vigencia(s: Sesion) -> None:
     if tiene_vigencia(df):
         candidatas = candidatas[candidatas["fecha_cierre"].isna() | (candidatas["fecha_cierre"] < pd.Timestamp(date.today()))]
     c = st.columns(3)
-    ui.kpi("Vacantes activas", len(activas), contenedor=c[0])
-    ui.kpi("Posiblemente vencidas", len(candidatas), f"Activas con más de {dias} días", contenedor=c[1])
+    ui.kpi("Vacantes activas", len(activas), contenedor=c[0], info="vacantes.vigencia_activas")
+    ui.kpi("Posiblemente vencidas", len(candidatas), f"Activas con más de {dias} días", contenedor=c[1], info="vacantes.vigencia_vencidas")
     ui.kpi("Con fecha de cierre", int(df["fecha_cierre"].notna().sum()) if tiene_vigencia(df) else None,
-           contenedor=c[2], no_disponible=not tiene_vigencia(df), ayuda="" if tiene_vigencia(df) else "Requiere la migración V007")
+           contenedor=c[2], no_disponible=not tiene_vigencia(df), info="vacantes.vigencia_con_cierre", ayuda="" if tiene_vigencia(df) else "Requiere la migración V007")
     if candidatas.empty:
         st.success("No hay vacantes activas con esa antigüedad.")
         return
     por_anio = candidatas.assign(Año=candidatas["Fecha"].dt.year.astype("Int64").astype(str).replace("<NA>", SIN_DATO)).groupby("Año").size()
     ui.nota("Por año de publicación: " + " · ".join(f"{a}: {n}" for a, n in por_anio.items()))
+    ui.ayuda_grafica("vacantes.tabla_vigencia", fila_propia=True)
     ui.tabla(candidatas.sort_values("Fecha"), ["ID Vacante", "Fecha", "Empresa", "Tipo de Vacante", "Estado"], fechas=("Fecha",), altura=300)
     if not s.puede("vacantes", "edit"):
         ui.nota("Tu perfil no puede cambiar el estado de las vacantes.")
