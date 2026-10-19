@@ -213,6 +213,84 @@ La columna «Región RIDET» indica a qué región pertenece cada municipio.""",
     "mapa.tabla_sin_coordenadas": """Son las empresas que no se dibujan en el mapa porque no tienen su ubicación exacta registrada. La columna «Vacantes» es el total de puestos que han ofrecido.""",
 
     "mapa.tabla_con_problema": """Son las empresas que no se dibujan en el mapa porque su ubicación registrada no es válida. La columna «Problema» explica el motivo de cada una.""",
+
+    # ------------------------------------------------------------------ RIDET · pestaña General
+    "ridet.general_imagenes": """Son las páginas del documento oficial RIDET, que reúne las seis regiones económicas de Tlaxcala. Con los botones «Anterior» y «Siguiente» se pasa de una imagen a otra.
+
+Son imágenes del documento oficial, no datos calculados por el sistema.""",
+
+    "ridet.general_resumen": """Resume las seis regiones según el documento oficial RIDET.
+
+Cabecera: el municipio principal de la región.
+Municipios: cuántos municipios indica el encabezado de la región.
+Sectores: sectores industriales que reporta el documento en la región.
+Empresas: empresas que reporta el documento en la región.
+Instituciones EMS: instituciones públicas de educación media superior de la región.
+
+Son cifras del documento, no conteos de la base de vacantes ni de personas.""",
+
+    # ------------------------------------------------------------------ RIDET · pestaña Regiones
+    "ridet.region_municipios": """Es el número de municipios que el encabezado del documento oficial asigna a la región elegida. La lista de esos municipios aparece debajo.""",
+
+    "ridet.region_empresas": """Es el número de empresas que el documento oficial reporta en la región elegida. Es una cifra del documento, no de la base de vacantes.""",
+
+    "ridet.region_sectores": """Es el número de sectores industriales que el documento oficial reporta en la región elegida.""",
+
+    "ridet.region_ems": """Es el número de instituciones públicas de educación media superior que el documento oficial reporta en la región elegida.""",
+
+    "ridet.region_lista_empresas": """Lista las empresas que el documento oficial reporta en la región elegida, junto con la página del PDF donde aparece cada una.""",
+
+    "ridet.region_imagenes": """Son las páginas del documento oficial RIDET que corresponden a la región elegida: su cabecera, sus municipios, sus empresas por sector y sus instituciones de educación media superior. Con «Anterior» y «Siguiente» se pasa de una imagen a otra.
+
+Son imágenes del documento oficial, no datos calculados por el sistema.""",
+
+    # ------------------------------------------------------------------ RIDET · pestaña Empresas y vacantes
+    "ridet.emp_con_vacantes": """Es el número de empresas distintas que han ofrecido al menos una vacante. Cada empresa se cuenta una sola vez, aunque tenga muchos puestos.""",
+
+    "ridet.emp_con_region": """Es el número de empresas con vacantes a las que el sistema pudo asignar una región del RIDET. El porcentaje indica qué parte del total de empresas con vacantes representa.
+
+La región se asigna con el municipio registrado de la empresa o, si no lo tiene, con el nombre de la empresa tal como aparece en el documento RIDET.""",
+
+    "ridet.emp_sin_region": """Es el número de empresas con vacantes a las que todavía no se les puede asignar una región. Sucede cuando su nombre no aparece en el documento RIDET, o aparece en varias regiones y la empresa no tiene municipio registrado.
+
+Sus vacantes se muestran aparte, como «Pendiente de asignar».""",
+
+    "ridet.emp_tabla": """Muestra la región RIDET de cada empresa que ha ofrecido vacantes y cómo se determinó.
+
+Criterio, es decir, la forma en que se asignó la región:
+Por municipio capturado: se usó el municipio registrado de la empresa.
+Coincide con el RIDET: el nombre de la empresa es igual al que aparece en el documento.
+Alias de la versión anterior: el nombre coincide con uno usado antes en el documento.
+Coincidencia parcial: el nombre se parece al de una empresa del documento.
+Ambigua: el nombre aparece en varias regiones, por eso no se asigna sola.
+Sin coincidencia: el nombre no aparece en el documento.
+
+Coincide con (RIDET): nombre o municipio con el que se encontró la coincidencia. Vacantes: número de vacantes de la empresa.""",
+
+    "ridet.emp_vacantes_tabla": """Lista cada vacante junto con la región RIDET de su empresa. Con los filtros «Región» y «Empresa» se ve solo una parte de la lista.
+
+Las vacantes de empresas sin región asignada aparecen como «Pendiente de asignar».""",
+
+    # ------------------------------------------------------------------ RIDET · pestaña Estadísticas
+    "ridet.est_regiones": """Es el número de regiones económicas que define el documento oficial RIDET.""",
+
+    "ridet.est_empresas": """Es la suma de las empresas que el documento oficial reporta en cada una de sus regiones. Es una cifra del documento, no de la base de vacantes.""",
+
+    "ridet.est_sectores": """Es la suma de los sectores industriales de cada región. Un mismo sector puede aparecer en varias regiones, por eso esta suma lo cuenta una vez por cada región donde aparece.""",
+
+    "ridet.est_ems": """Es la suma de las instituciones públicas de educación media superior que el documento oficial reporta en cada región.""",
+
+    "ridet.grafica_empresas_region": """Compara cuántas empresas reporta el documento oficial RIDET en cada región.
+
+Cada barra es una región y su número es la cantidad de empresas reportadas. Una barra más larga indica una región con más empresas en el inventario del documento.
+
+No mide empleo ni vacantes.""",
+
+    "ridet.grafica_vacantes_region": """Muestra cuántas vacantes de la base corresponden a cada región.
+
+Cada vacante se ubica según la región asignada a su empresa. «Pendiente de asignar» agrupa las vacantes de empresas a las que todavía no se les puede asignar región.
+
+Refleja las vacantes registradas, no el empleo real de cada región.""",
 }
 
 

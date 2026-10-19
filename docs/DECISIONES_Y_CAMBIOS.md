@@ -73,3 +73,8 @@
 - Mismo mecanismo que en el Inicio: los 8 indicadores, las casillas «Personas»/«Empresas», el interruptor de separar empresas, el mapa y las tres tablas (municipios, empresas sin coordenadas, coordenadas con problema) tienen su ❓.
 - Los textos están en `vinculate/config/ayudas.py`, claves que empiezan con `mapa.`. Se quitó el recuadro «Fuente, significado e interpretación» del mapa.
 - En el mapa el ❓ va en su propia línea sobre la gráfica (esa esquina la ocupan los botones de zoom); las casillas e interruptores usan la ayuda nativa de Streamlit con el mismo texto.
+
+## Ayudas ❓ en RIDET
+- Las cinco vistas de RIDET (General, Regiones, Empresas y vacantes, Estadísticas) tienen su ❓: 11 indicadores, 2 gráficas y las tablas e imágenes del documento. Se quitaron los recuadros «Fuente, significado e interpretación».
+- Textos en `vinculate/config/ayudas.py`, claves que empiezan con `ridet.`. La explicación de los criterios de asignación de región (por municipio, coincidencia exacta, alias, parcial, ambigua) está en `ridet.emp_tabla`.
+- La observación sobre los municipios del documento (Altzayanca) y las etiquetas de criterio de la tabla no se modificaron.

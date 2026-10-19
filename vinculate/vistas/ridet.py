@@ -74,12 +74,11 @@ def _clasificar(sesion: Sesion):
 def _general() -> None:
     st.markdown("Consulta las seis regiones económicas, sus municipios, empresas e instituciones de educación media superior "
                 "según el documento oficial RIDET.")
+    ui.ayuda_grafica("ridet.general_imagenes", fila_propia=True)
     _visor(nucleo.IMAGENES_GENERALES, "ridet_general")
     st.markdown("##### Resumen por región")
+    ui.ayuda_grafica("ridet.general_resumen", fila_propia=True)
     ui.tabla(nucleo.resumen_regiones())
-    ui.explicacion("Encabezados de cada región del documento oficial RIDET (assets/documentos/RIDET.pdf).",
-                   "Municipios, sectores industriales, empresas e instituciones públicas de educación media superior que el documento reporta por región.",
-                   "Son cifras del documento, no conteos de la base de vacantes ni de personas.")
     with st.expander("⚠️ Observación sobre los municipios del documento"):
         st.write(nucleo.NOTA_OBSERVACION)
 
@@ -88,17 +87,19 @@ def _regiones() -> None:
     region = st.selectbox("Región", nucleo.NOMBRES_REGION, key="ridet_region")
     fila = next(r for r in nucleo.REGIONES if r["region"] == region)
     c = st.columns(4)
-    ui.kpi("Municipios (según el encabezado)", fila["municipios"], contenedor=c[0])
-    ui.kpi("Empresas", fila["empresas"], contenedor=c[1])
-    ui.kpi("Sectores industriales", fila["sectores"], contenedor=c[2])
-    ui.kpi("Instituciones públicas de EMS", fila["ems"], contenedor=c[3])
+    ui.kpi("Municipios (según el encabezado)", fila["municipios"], contenedor=c[0], info="ridet.region_municipios")
+    ui.kpi("Empresas", fila["empresas"], contenedor=c[1], info="ridet.region_empresas")
+    ui.kpi("Sectores industriales", fila["sectores"], contenedor=c[2], info="ridet.region_sectores")
+    ui.kpi("Instituciones públicas de EMS", fila["ems"], contenedor=c[3], info="ridet.region_ems")
     st.caption(f"Cabecera regional: {fila['cabecera']}")
     st.markdown("**Municipios de la región:** " + ", ".join(m.title() for m in nucleo.REGION_MUNICIPIOS[region]))
     ref = _referencia()
     if not ref.empty:
         lista = ref[ref["region"] == region]
         with st.expander(f"Empresas que el documento lista en esta región ({len(lista)})"):
+            ui.ayuda_grafica("ridet.region_lista_empresas", fila_propia=True)
             ui.tabla(lista, ["empresa", "pagina"], {"empresa": "Empresa", "pagina": "Página del PDF"}, altura=320)
+    ui.ayuda_grafica("ridet.region_imagenes", fila_propia=True)
     _visor(nucleo.IMAGENES_REGION[region], f"ridet_{normalizar_texto(region).replace(' ', '_')}")
 
 
@@ -112,16 +113,13 @@ def _empresas_y_vacantes(sesion: Sesion) -> None:
         return
     asignadas = int((tabla["region"] != nucleo.PENDIENTE).sum())
     c = st.columns(3)
-    ui.kpi("Empresas con vacantes", len(tabla), contenedor=c[0])
-    ui.kpi("Con región asignada", asignadas, ui.fmt_pct(asignadas, len(tabla)) + " de las empresas", contenedor=c[1])
-    ui.kpi("Pendientes de asignar", len(tabla) - asignadas, "requieren captura de municipio", contenedor=c[2])
-    ui.explicacion("Catálogo de vacantes cruzado con las empresas del documento RIDET (nombre) y, si existe, con el municipio capturado de la empresa.",
-                   "Asigna cada empresa a una región RIDET y dice con qué criterio lo hizo.",
-                   "«Coincide con el RIDET» es una coincidencia exacta de nombre. «Parcial» o «alias» conviene revisarlas. Una empresa que aparece "
-                   "en varias regiones (p. ej. con varias plantas) NO se asigna sola: queda pendiente hasta capturar su municipio.")
+    ui.kpi("Empresas con vacantes", len(tabla), contenedor=c[0], info="ridet.emp_con_vacantes")
+    ui.kpi("Con región asignada", asignadas, ui.fmt_pct(asignadas, len(tabla)) + " de las empresas", contenedor=c[1], info="ridet.emp_con_region")
+    ui.kpi("Pendientes de asignar", len(tabla) - asignadas, "requieren captura de municipio", contenedor=c[2], info="ridet.emp_sin_region")
 
     t = tabla.copy()
     t["Criterio"] = t["metodo"]
+    ui.ayuda_grafica("ridet.emp_tabla", fila_propia=True)
     ui.tabla(t.sort_values(["region", "Vacantes"], ascending=[True, False]),
              ["empresa", "region", "Criterio", "coincide_con", "Vacantes"],
              {"empresa": "Empresa", "region": "Región", "coincide_con": "Coincide con (RIDET)"}, altura=360)
@@ -150,6 +148,7 @@ def _empresas_y_vacantes(sesion: Sesion) -> None:
         v = v[v["Región RIDET"] == reg]
     if emp != "Todas":
         v = v[v["Empresa"] == emp]
+    ui.ayuda_grafica("ridet.emp_vacantes_tabla", fila_propia=True)
     ui.tabla(v, ["ID Vacante", "Empresa", "Región RIDET", "Tipo de Vacante", "Tipo de Oportunidad", "Estado", "Fecha"],
              fechas=("Fecha",), altura=380)
     ui.boton_exportar(sesion, "ridet", v, "vacantes_por_region_ridet", "ridet_vacantes")
@@ -158,14 +157,13 @@ def _empresas_y_vacantes(sesion: Sesion) -> None:
 def _estadisticas(sesion: Sesion) -> None:
     res = nucleo.resumen_regiones()
     c = st.columns(4)
-    ui.kpi("Regiones", len(res), contenedor=c[0])
-    ui.kpi("Empresas reportadas", int(res["Empresas"].sum()), "suma de los encabezados del documento", contenedor=c[1])
-    ui.kpi("Sectores (suma por región)", int(res["Sectores"].sum()), "un sector puede repetirse entre regiones", contenedor=c[2])
-    ui.kpi("Instituciones de EMS", int(res["Instituciones EMS"].sum()), contenedor=c[3])
+    ui.kpi("Regiones", len(res), contenedor=c[0], info="ridet.est_regiones")
+    ui.kpi("Empresas reportadas", int(res["Empresas"].sum()), "suma de los encabezados del documento", contenedor=c[1], info="ridet.est_empresas")
+    ui.kpi("Sectores (suma por región)", int(res["Sectores"].sum()), "un sector puede repetirse entre regiones", contenedor=c[2], info="ridet.est_sectores")
+    ui.kpi("Instituciones de EMS", int(res["Instituciones EMS"].sum()), contenedor=c[3], info="ridet.est_ems")
+    ui.ayuda_grafica("ridet.grafica_empresas_region")
     charts.mostrar(charts.barras_h(res.rename(columns={"Región": "Región"})[["Región", "Empresas"]], "Región", "Empresas",
                                    "Empresas por región según el documento RIDET", alto=320), "ridet_empresas_region")
-    ui.explicacion("Encabezados del documento oficial RIDET.", "Compara cuántas empresas reporta el documento en cada región.",
-                   "Una barra mayor es una región con más empresas en el inventario del documento; no mide empleo ni vacantes.")
     if not sesion.puede("vacantes", "view"):
         return
     vac, tabla, _ = _clasificar(sesion)
@@ -173,11 +171,9 @@ def _estadisticas(sesion: Sesion) -> None:
         return
     por_region = tabla.groupby("region")["Vacantes"].sum().reset_index().rename(columns={"region": "Región", "Vacantes": "Vacantes"})
     por_region = por_region[por_region["Vacantes"] > 0]
+    ui.ayuda_grafica("ridet.grafica_vacantes_region")
     charts.mostrar(charts.barras_h(por_region, "Región", "Vacantes", "Vacantes registradas por región (las pendientes se muestran aparte)", alto=320),
                    "ridet_vacantes_region")
-    ui.explicacion("Vacantes de la base, con cada empresa asignada a una región.",
-                   "Cuenta vacantes por región asignada; «Pendiente de asignar» agrupa a las empresas que aún no se pueden ubicar.",
-                   "Es un reflejo de las vacantes registradas, no del empleo real de cada región.")
 
 
 def _documento() -> None:

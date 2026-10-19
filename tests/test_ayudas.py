@@ -16,7 +16,7 @@ def _claves_usadas(archivo: str) -> set[str]:
     return set(re.findall(r'(?:\binfo=|ayuda_grafica\(|ayudas\.texto\()"([\w.]+)"', codigo))
 
 
-@pytest.mark.parametrize("archivo,prefijo,minimo", [("inicio.py", "inicio.", 25), ("mapa.py", "mapa.", 14)])
+@pytest.mark.parametrize("archivo,prefijo,minimo", [("inicio.py", "inicio.", 25), ("mapa.py", "mapa.", 14), ("ridet.py", "ridet.", 19)])
 def test_cada_ayuda_usada_tiene_texto_y_cada_texto_se_usa(archivo, prefijo, minimo):
     usadas = _claves_usadas(archivo)
     assert len(usadas) >= minimo
@@ -27,7 +27,7 @@ def test_cada_ayuda_usada_tiene_texto_y_cada_texto_se_usa(archivo, prefijo, mini
 
 @pytest.mark.parametrize("clave", sorted(ayudas.AYUDAS))
 def test_redaccion_de_cada_ayuda(clave):
-    t = ayudas.AYUDAS[clave].lower()
+    t = ayudas.AYUDAS[clave].lower().replace("pendiente de asignar", "")  # etiqueta que muestra la página
     assert t.strip(), "texto vacío"
     assert [w for w in PALABRAS_PROHIBIDAS if w in t] == []
 
