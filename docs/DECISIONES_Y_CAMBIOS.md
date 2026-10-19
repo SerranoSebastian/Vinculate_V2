@@ -89,3 +89,8 @@
 - Textos en `vinculate/config/ayudas.py`, claves `vacantes.*` (33): KPIs de Análisis, Empresas, Carga y Vigencia; gráficas, mapa de calor, informe automático, tablas (Buscador, Empresas, Editar, Vigencia), captura de ubicación, editor de coordenadas, formulario de alta y umbral de vigencia.
 - Se quitó el expander `ui.explicacion` de Análisis. Sin cambios de base de datos ni de permisos.
 - `tests/test_ayudas.py` valida que cada clave usada tenga texto, que todo texto definido se use y que no aparezcan palabras de pendientes/revisión.
+
+## Ayudas ❓ · Vinculaciones (2026-10-19)
+
+- Textos en `vinculate/config/ayudas.py`, claves `vinculaciones.*` (23): 7 indicadores superiores, formulario de nuevo seguimiento, tabla de editar, gráficas y 4 indicadores de Estadísticas, tabla de personas, selector del historial y tabla de exportación. Las fichas del historial reutilizan las claves `personas.ficha_*`.
+- Se quitó el expander `ui.explicacion` de la parte superior. Sin cambios de base de datos ni permisos.

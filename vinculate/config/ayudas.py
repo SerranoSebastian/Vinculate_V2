@@ -567,6 +567,101 @@ Fecha: día en que se publicó.
 Estado: Activa o Inactiva.
 
 Desde aquí se pueden marcar como Inactivas, con confirmación previa. No se elimina ninguna vacante.""",
+
+    # ------------------------------------------------------------------ VINCULACIONES · Indicadores superiores
+    "vinculaciones.kpi_personas": """Es el número de personas distintas registradas en el sistema. Cada persona se cuenta una sola vez, aunque tenga varias vinculaciones.""",
+
+    "vinculaciones.kpi_historicas": """Es el total de vinculaciones históricas registradas, sumando las de todas las personas. Una persona puede tener más de una.
+
+Son los registros de vinculación de las personas; no son contrataciones.""",
+
+    "vinculaciones.kpi_vinculados": """Es el número de personas cuyo estatus actual es «Vinculado».
+
+El estatus de cada persona sale de su seguimiento más reciente con una empresa. Una persona sin seguimientos figura como «Vinculado» porque su registro histórico ya es una vinculación.""",
+
+    "vinculaciones.kpi_colocados": """Es el número de personas cuyo estatus actual es «Colocado», es decir, que consiguieron un empleo. Si una persona tiene alguna colocación registrada, se toma la más reciente para definir su estatus.""",
+
+    "vinculaciones.kpi_no_vinculados": """Es el número de personas cuyo estatus actual es «No vinculado», es decir, que no lograron una vinculación en su seguimiento más reciente.""",
+
+    "vinculaciones.kpi_seguimientos": """Es el total de seguimientos registrados. Un seguimiento es el registro de una persona con una empresa y un puesto concretos, con su estatus, fecha y responsable.
+
+Mide la actividad de vinculación con las empresas; por sí solo no equivale a una contratación.""",
+
+    "vinculaciones.kpi_empresas": """Es el número de empresas distintas que aparecen en los seguimientos. Una empresa con varios seguimientos se cuenta una sola vez.""",
+
+    # ------------------------------------------------------------------ VINCULACIONES · Nuevo seguimiento
+    "vinculaciones.nuevo_formulario": """Sirve para registrar un seguimiento nuevo: una persona con una empresa y un puesto.
+
+Primero se elige a la persona. La empresa y el puesto se escogen de los catálogos o de una vacante vigente (abierta); en ese caso se toman de la vacante. El sector se asigna según la empresa.
+
+La vinculación histórica de origen es opcional y sirve para relacionar el seguimiento con un registro anterior de la persona.
+
+La fecha de vinculación solo se guarda cuando el estatus es «Vinculado».""",
+
+    # ------------------------------------------------------------------ VINCULACIONES · Editar / eliminar
+    "vinculaciones.tabla_editar": """Lista los seguimientos que coinciden con la búsqueda por persona, empresa o ID (hasta 200), de los modificados más recientemente a los más antiguos.
+
+ID: identificador del seguimiento.
+Persona: nombre de la persona.
+Empresa: empresa con la que se dio seguimiento.
+Estatus: situación del seguimiento.
+Vinculación: fecha de vinculación.
+
+Al elegir una fila se puede editar o eliminar ese seguimiento.""",
+
+    # ------------------------------------------------------------------ VINCULACIONES · Estadísticas
+    "vinculaciones.grafica_estatus": """Reparte a las personas según su estatus actual (por ejemplo, Vinculado, Colocado o No vinculado). Cada porción es el porcentaje de personas con ese estatus.
+
+El estatus sale del seguimiento más reciente de cada persona.""",
+
+    "vinculaciones.grafica_historicas": """Muestra cuántas personas tienen 1, 2, 3 o más vinculaciones históricas. Cada barra es un número de vinculaciones y su altura es la cantidad de personas.
+
+Sirve para saber cuántas personas se han vinculado más de una vez.""",
+
+    "vinculaciones.grafica_anual": """Muestra cuántos seguimientos hay en cada año, separados por estatus con colores distintos. El año sale de la fecha de vinculación.
+
+Solo se incluyen los seguimientos que tienen fecha de vinculación.""",
+
+    "vinculaciones.grafica_empresas": """Muestra las 15 empresas con más seguimientos. Cada barra es una empresa y su largo es el número de seguimientos.
+
+Sirve para ver con qué empresas se trabaja más.""",
+
+    "vinculaciones.grafica_puestos": """Muestra los 15 puestos con más seguimientos. Cada barra es un puesto y su largo es el número de seguimientos.
+
+Sirve para ver qué puestos se ocupan más en las vinculaciones.""",
+
+    "vinculaciones.kpi_col_personas": """Es el número de personas cuyo estatus actual es «Colocado».""",
+
+    "vinculaciones.kpi_col_registros": """Es el número de seguimientos con estatus «Colocado». Puede ser mayor que el de personas colocadas si una persona tiene más de un seguimiento con ese estatus.""",
+
+    "vinculaciones.kpi_col_empresas": """Es el número de empresas distintas en las que hay al menos un seguimiento con estatus «Colocado».""",
+
+    "vinculaciones.kpi_col_tasa": """Es el porcentaje de personas colocadas respecto a las personas vinculadas.
+
+Se calcula dividiendo las personas con estatus «Colocado» entre las personas con estatus «Vinculado» o «Colocado».""",
+
+    "vinculaciones.grafica_col_sexo": """Reparte a las personas colocadas según su sexo. Cada porción es el porcentaje del total de personas colocadas.""",
+
+    "vinculaciones.grafica_col_municipio": """Muestra los 15 municipios donde viven más personas colocadas. Cada barra es un municipio y su largo es el número de personas colocadas.""",
+
+    "vinculaciones.tabla_personas": """Tiene una fila por persona.
+
+ID: identificador de la persona.
+Vinculaciones: número de vinculaciones históricas que tiene.
+Estatus: estatus actual, según su seguimiento más reciente.
+Seguimientos: número de seguimientos que tiene con empresas.
+Empresas: número de empresas distintas con las que se le dio seguimiento.
+Empresa actual: empresa de su seguimiento más reciente.""",
+
+    # ------------------------------------------------------------------ VINCULACIONES · Historial de una persona
+    "vinculaciones.historial_persona": """Sirve para elegir a una persona y ver todo su historial: sus datos, sus vinculaciones, sus seguimientos con empresas y la calidad de su información.
+
+La lista muestra el nombre, el identificador y el número de vinculaciones históricas de cada persona.""",
+
+    # ------------------------------------------------------------------ VINCULACIONES · Exportar
+    "vinculaciones.tabla_exportar": """Muestra los seguimientos que se descargarán, con persona, empresa, puesto, estatus, fechas de vinculación y colocación, y responsable.
+
+El botón de descarga genera un archivo con todos los seguimientos.""",
 }
 
 
