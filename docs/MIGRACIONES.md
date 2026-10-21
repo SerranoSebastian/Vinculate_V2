@@ -6,9 +6,9 @@ son re-ejecutables sin duplicar nada · tienen un `_rollback.sql` · están prob
 (`tests/test_sql_migraciones.py`, 80 pruebas).
 
 **Cómo se ejecutan:** a mano, en *Supabase → SQL Editor*, **primero en un proyecto de prueba**. La app solo *lee* qué migraciones
-están aplicadas (*Administración → Estado del sistema*) y funciona, con menos funciones, si falta alguna de las opcionales (V004, V005, V007, V008).
+están aplicadas (*Administración → Estado del sistema*) y funciona, con menos funciones, si falta alguna de las opcionales (V004, V005, V007, V008, V011).
 
-Orden de aplicación: **V001 → V002 → V003 → V004 → V005 → V007 → V008 → V009 → V010**. Orden de reversión: el inverso.
+Orden de aplicación: **V001 → V002 → V003 → V004 → V005 → V007 → V008 → V009 → V010 → V011**. Orden de reversión: el inverso.
 Dependencias: V003 y V008 requieren V002 (la migración se detiene con un mensaje claro si falta).
 
 ---
@@ -96,7 +96,13 @@ La app **ya muestra «Indefinido» para todas esas formas** aunque no la ejecute
 Estaba prevista para vistas SQL de analítica. Se difiere: con el volumen actual (≈700 filas) la app calcula los indicadores en Python con
 los datos que ya lee con RLS, y una vista añade superficie de seguridad (las vistas de Postgres ignoran RLS salvo que se declaren con
 `security_invoker`). Se retoma si el volumen lo justifica.
+## V011 — Ubicación de instituciones educativas  *(opcional)*
+Agrega 8 columnas nuevas y opcionales a `catalogo_instituciones`: `tipo` (Universidad | Escuela), `municipio`, `direccion`, `codigo_postal`, `latitud`, `longitud`,
+`ubicacion_fuente` (manual | importada) y `ubicacion_actualizada`, con restricciones de formato (CP de 5 dígitos, coordenadas dentro de México y siempre en pareja).
+**No modifica filas existentes, no rellena nada y no cambia permisos**: escribir en ese catálogo sigue siendo `administracion.edit` (V002). Se puede ejecutar más de una vez.
+**Verificar:** `select count(*) from information_schema.columns where table_schema='public' and table_name='catalogo_instituciones' and column_name in ('tipo','municipio','direccion','codigo_postal','latitud','longitud','ubicacion_fuente','ubicacion_actualizada');` → `8` (también aparece como «Aplicada» en *Administración → Estado del sistema*).
+**Revertir:** `V011_rollback.sql` (se pierde lo capturado después; el archivo trae la consulta de respaldo).
 
 ## Si necesitas deshacer todo
-Ejecuta los `_rollback.sql` en este orden: **V010 → V009 → V008 → V007 → V005 → V004 → V003 → V002 → V001**. Antes, respalda lo que se capturó después de aplicarlas
+Ejecuta los `_rollback.sql` en este orden: **V011 → V010 → V009 → V008 → V007 → V005 → V004 → V003 → V002 → V001**. Antes, respalda lo que se capturó después de aplicarlas
 (los archivos indican cómo). V001_rollback reabre las brechas de seguridad: solo como emergencia.

@@ -31,6 +31,13 @@ PALETA_EMPRESAS = [
 ]
 
 
+# Colores de tono medio para instituciones educativas (distintos de los de empresas, que además llevan contorno blanco).
+PALETA_INSTITUCIONES = [
+    "#0B7A75", "#C2185B", "#3949AB", "#EF6C00", "#558B2F", "#6A1B9A", "#00838F", "#AD1457", "#283593", "#E65100",
+    "#2E7D32", "#7B1FA2", "#006064", "#B71C1C", "#1565C0", "#F57F17", "#4E342E", "#37474F", "#9E9D24", "#D84315",
+]
+
+
 def parsear_numero(valor) -> float | None:
     """Número desde texto con coma decimal o espacios; None si está vacío o no es número."""
     if valor is None:
@@ -105,13 +112,14 @@ def color_de_empresa(nombre: str) -> str:
     return PALETA_EMPRESAS[zlib.crc32(normalizar_texto(nombre).encode("utf-8")) % len(PALETA_EMPRESAS)]
 
 
-def asignar_colores(nombres: list[str]) -> dict[str, str]:
-    """Un color por empresa, sin repetir mientras haya colores libres (24). Orden estable por nombre normalizado."""
+def asignar_colores(nombres: list[str], paleta: list[str] | None = None) -> dict[str, str]:
+    """Un color por empresa (o institución), sin repetir mientras haya colores libres. Orden estable por nombre normalizado."""
+    paleta = paleta or PALETA_EMPRESAS
     orden = sorted(dict.fromkeys(nombres), key=normalizar_texto)
-    return {n: PALETA_EMPRESAS[i % len(PALETA_EMPRESAS)] for i, n in enumerate(orden)}
+    return {n: paleta[i % len(paleta)] for i, n in enumerate(orden)}
 
 
-def separar_superpuestos(df: pd.DataFrame, metros: float = 40.0) -> pd.DataFrame:
+def separar_superpuestos(df: pd.DataFrame, metros: float = 40.0, col: str = "Empresa") -> pd.DataFrame:
     """Agrega `lat_mapa`/`lon_mapa`: igual a la real, salvo las empresas que comparten la misma ubicación, que se reparten en
     un círculo (radio crece con la cantidad). Solo para dibujar."""
     d = df.copy()
@@ -125,7 +133,7 @@ def separar_superpuestos(df: pd.DataFrame, metros: float = 40.0) -> pd.DataFrame
         if n < 2:
             continue
         radio = metros * (1 + (n - 1) // 6)
-        for i, idx in enumerate(grupo.sort_values("Empresa").index):
+        for i, idx in enumerate(grupo.sort_values(col).index):
             ang = 2 * math.pi * i / n
             lat0 = float(d.at[idx, "Latitud"])
             d.at[idx, "lat_mapa"] = lat0 + (radio * math.sin(ang)) / 111_320

@@ -907,3 +907,40 @@ class TestConsultasDeVerificacionDocumentadas:
     def test_v003_seis_disparadores(self, db_todo):
         assert scalar(db_todo, "select count(*) from pg_trigger where not tgisinternal and (tgname like 'trg_audit_%' or tgname like 'trg_touch_%') "
                                "and tgrelid in ('public.personas'::regclass,'public.vacantes'::regclass,'public.vinculaciones'::regclass)") == 6
+
+
+# ---------------------------------------------------------------------------
+# V011 — ubicación de instituciones educativas
+# ---------------------------------------------------------------------------
+class TestV011:
+    def test_agrega_columnas_sin_tocar_lo_existente_y_valida(self):
+        db = _build("v11", MIGS_1A3)
+        try:
+            with _connect(db) as conn:
+                conn.execute("insert into public.catalogo_instituciones(nombre) values ('UATx')")
+            antes = scalar(db, "select count(*) from public.catalogo_instituciones")
+            _run_file(db, MIG / "V011_ubicacion_instituciones.sql")
+            _run_file(db, MIG / "V011_ubicacion_instituciones.sql")          # idempotente
+            assert scalar(db, "select count(*) from public.catalogo_instituciones") == antes
+            assert scalar(db, "select count(*) from information_schema.columns where table_schema='public' and table_name='catalogo_instituciones' "
+                              "and column_name in ('tipo','municipio','direccion','codigo_postal','latitud','longitud','ubicacion_fuente','ubicacion_actualizada')") == 8
+            assert scalar(db, "select latitud from public.catalogo_instituciones where nombre='UATx'") is None   # nada se rellena
+            with _connect(db) as conn, conn.transaction():
+                cur = conn.cursor()
+                assert _err(cur, "update public.catalogo_instituciones set tipo='Universidad', latitud=19.3, longitud=-98.2 where nombre='UATx'") is None
+                assert "check" in (_err(cur, "update public.catalogo_instituciones set tipo='Banco' where nombre='UATx'") or "")
+                assert "check" in (_err(cur, "update public.catalogo_instituciones set latitud=19.3, longitud=null where nombre='UATx'") or "")
+                assert "check" in (_err(cur, "update public.catalogo_instituciones set latitud=60, longitud=-98.2 where nombre='UATx'") or "")
+                assert "check" in (_err(cur, "update public.catalogo_instituciones set codigo_postal='90' where nombre='UATx'") or "")
+        finally:
+            _drop_db(db)
+
+    def test_rollback_quita_solo_lo_agregado(self):
+        db = _build("v11rb", MIGS_1A3 + ["V011_ubicacion_instituciones.sql", "V011_rollback.sql"])
+        try:
+            assert scalar(db, "select count(*) from information_schema.columns where table_schema='public' and table_name='catalogo_instituciones' "
+                              "and column_name in ('tipo','latitud','longitud')") == 0
+            assert scalar(db, "select count(*) from information_schema.columns where table_schema='public' and table_name='catalogo_instituciones' "
+                              "and column_name in ('nombre','activo')") == 2
+        finally:
+            _drop_db(db)

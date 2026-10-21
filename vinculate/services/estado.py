@@ -87,6 +87,12 @@ def migraciones(sesion: Sesion) -> list[Migracion]:
         out.append(Migracion("V008", "Disponibilidad de personas para vincular", disp is not None, "Tabla persona_disponibilidad."))
     except ErrorDatos:
         out.append(Migracion("V008", "Disponibilidad de personas para vincular", None, "Tabla persona_disponibilidad."))
+    try:
+        from ..repositories.catalogos import RepoInstituciones
+        out.append(Migracion("V011", "Ubicación de instituciones educativas", RepoInstituciones(sesion.cliente).columnas_de_ubicacion(),
+                             "Columnas tipo, latitud y longitud en catalogo_instituciones."))
+    except ErrorDatos:
+        out.append(Migracion("V011", "Ubicación de instituciones educativas", None, "Columnas tipo, latitud y longitud en catalogo_instituciones."))
     return out
 
 

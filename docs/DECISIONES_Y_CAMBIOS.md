@@ -99,3 +99,11 @@
 
 - Computadoras y Auditoría tienen selector «Usuario» (como Permisos): por defecto el usuario en sesión, con la opción «Todos los usuarios». La auditoría filtra en la consulta (`RepoAdmin.auditoria(uid=…)`), así que cada usuario ve sus últimos 1,000 movimientos.
 - Prioridades: se pueden eliminar una o todas las atendidas, con confirmación y auditoría (`priority_deleted`). Requiere el permiso `prioridades.delete`; la política RLS `priorities_delete` ya existía, no hay migración.
+
+## Instituciones educativas en el mapa (2026-10-21)
+
+- **Migración V011** (opcional, solo agrega): `tipo`, `municipio`, `direccion`, `codigo_postal`, `latitud`, `longitud`, `ubicacion_fuente`, `ubicacion_actualizada` en `catalogo_instituciones`. Reversión en `V011_rollback.sql`. Sin cambios de RLS.
+- **Quién captura:** solo administración (`administracion.edit`, igual que la RLS del catálogo), en *Administración → Instituciones*: tipo (Universidad/Escuela), municipio y coordenadas, con pegado «lat, lon» de Google Maps.
+- **Qué se lista:** solo instituciones que ya tienen al menos una persona asociada (la columna `Institución` de personas); «Personas» cuenta personas distintas y se informa cuántas fueron asignadas por balanceo. La fila del catálogo se crea al guardar si no existía.
+- **Mapa:** casilla «Instituciones educativas» (apagada de inicio), filtro por tipo y por institución, «Acercar a», color propio por institución (paleta distinta a empresas) y contorno oscuro; clic abre el detalle con sus personas. Sin coordenadas no se dibuja y se lista aparte; nada se estima.
+- Sin V011 la app sigue funcionando: la casilla avisa y *Estado del sistema* muestra V011 como pendiente.

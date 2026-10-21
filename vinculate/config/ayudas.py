@@ -165,6 +165,10 @@ Cada barra es una empresa y su número es la cantidad de seguimientos que tiene,
 
     "mapa.casilla_empresas": """Muestra un punto por cada empresa, en la ubicación exacta que tiene registrada. Cada empresa tiene su propio color y su punto es más grande mientras más vacantes tiene.""",
 
+    "mapa.casilla_instituciones": """Muestra un punto por cada universidad o escuela que ya tiene personas asociadas, en la ubicación exacta que administración registró. Cada institución tiene su propio color y un contorno oscuro que la distingue de las empresas; su punto es más grande mientras más personas tiene.""",
+
+    "mapa.tipos_institucion": """Permite mostrar solo universidades, solo escuelas, o ambas. El tipo de cada institución lo registra administración.""",
+
     "mapa.separar_empresas": """Si dos empresas tienen exactamente la misma ubicación, sus puntos se separan unos metros en círculo para que ninguno tape a otro. Es solo un efecto visual: al pasar el cursor sobre un punto siempre se ven sus coordenadas reales.""",
 
     # ------------------------------------------------------------------ MAPA TERRITORIAL · indicadores de personas
@@ -197,18 +201,33 @@ La lista con el motivo de cada una está debajo del mapa, en «Coordenadas con p
 
 Cambia si se usan los filtros de «Opciones del mapa».""",
 
+    # ------------------------------------------------------------------ MAPA TERRITORIAL · indicadores de instituciones
+    "mapa.instituciones_en_mapa": """Es el número de instituciones educativas dibujadas en el mapa. Se cuentan solo las que ya tienen personas asociadas y cuya ubicación exacta está registrada. La cifra de abajo indica cuántas instituciones con personas hay en total.""",
+
+    "mapa.inst_sin_coordenadas": """Son las instituciones con personas asociadas que no se dibujan porque todavía no tienen su ubicación exacta registrada. Administración la registra en Administración → Instituciones.""",
+
+    "mapa.inst_con_problema": """Son las instituciones cuyas coordenadas registradas no son válidas (por ejemplo, tienen la latitud y la longitud invertidas o caen fuera de México). Estas instituciones no se dibujan hasta que se corrijan.""",
+
+    "mapa.inst_personas_en_mapa": """Es la suma de personas asociadas a las instituciones que aparecen en el mapa con los filtros elegidos. Cada persona se cuenta una sola vez en su institución.""",
+
     # ------------------------------------------------------------------ MAPA TERRITORIAL · el mapa y las tablas
-    "mapa.grafica_mapa": """Muestra en un solo mapa dónde están las personas y las empresas de Tlaxcala.
+    "mapa.grafica_mapa": """Muestra en un solo mapa dónde están las personas, las empresas y las instituciones educativas de Tlaxcala.
 
 Municipios: cada uno se colorea según la cantidad elegida en «Colorear municipios por». Mientras más oscuro, mayor cantidad. Cada persona, vinculación o vacante se ubica por el municipio registrado en la base.
 
 Empresas: cada punto es una empresa, colocada en su ubicación exacta. Cada empresa tiene su propio color para distinguirla de las demás y su punto es más grande mientras más vacantes tiene.
 
-Se pueden mostrar las dos capas juntas o solo una con las casillas de arriba. Con la rueda del ratón se acerca, arrastrando se mueve y al hacer clic en un municipio o en una empresa se abre su detalle. En la leyenda, un clic oculta o muestra una empresa.""",
+Instituciones educativas: cada punto con contorno oscuro es una universidad o escuela que ya tiene personas asociadas. Cada una tiene su propio color y su punto es más grande mientras más personas tiene.
+
+Se pueden mostrar las capas juntas o solo una con las casillas de arriba. Con la rueda del ratón se acerca, arrastrando se mueve y al hacer clic en un municipio, una empresa o una institución se abre su detalle. En la leyenda, un clic oculta o muestra un punto.""",
 
     "mapa.tabla_municipios": """Lista los 60 municipios de Tlaxcala con su cantidad, de mayor a menor. La columna «Total» es lo elegido en «Colorear municipios por» (personas únicas, vinculaciones históricas o vacantes).
 
 La columna «Región RIDET» indica a qué región pertenece cada municipio.""",
+
+    "mapa.tabla_inst_sin_coordenadas": """Son las instituciones que no se dibujan en el mapa porque no tienen su ubicación exacta registrada. La columna «Personas» es el número de personas asociadas a cada una.""",
+
+    "mapa.tabla_inst_con_problema": """Son las instituciones cuyas coordenadas registradas no son válidas. La columna «Problema» explica qué tiene mal cada una.""",
 
     "mapa.tabla_sin_coordenadas": """Son las empresas que no se dibujan en el mapa porque no tienen su ubicación exacta registrada. La columna «Vacantes» es el total de puestos que han ofrecido.""",
 
@@ -662,6 +681,23 @@ La lista muestra el nombre, el identificador y el número de vinculaciones hist�
     "vinculaciones.tabla_exportar": """Muestra los seguimientos que se descargarán, con persona, empresa, puesto, estatus, fechas de vinculación y colocación, y responsable.
 
 El botón de descarga genera un archivo con todos los seguimientos.""",
+
+    # ------------------------------------------------------------------ ADMINISTRACIÓN · Instituciones
+    "instituciones.kpi_total": """Es el número de instituciones educativas (universidades y escuelas) que ya tienen al menos una persona asociada en la base. Solo se listan estas.""",
+
+    "instituciones.kpi_con_coordenadas": """Es el número de instituciones que ya tienen su ubicación exacta registrada. Estas son las que aparecen en el Mapa territorial.""",
+
+    "instituciones.kpi_sin_coordenadas": """Es el número de instituciones que todavía no tienen su ubicación exacta registrada. No aparecen en el Mapa territorial hasta que se registre.""",
+
+    "instituciones.kpi_sin_tipo": """Es el número de instituciones a las que todavía no se les ha indicado si son universidad o escuela.""",
+
+    "instituciones.editor": """Sirve para registrar el tipo (Universidad o Escuela), el municipio y la ubicación exacta de cada institución que ya tiene personas asociadas. Con esos datos se dibujan en el Mapa territorial.
+
+Las coordenadas se pueden copiar desde Google Maps (clic derecho sobre el lugar) y pegarse en la columna «Pegar (lat, lon)», o escribirse por separado. En Tlaxcala, la latitud ronda 19.3 y la longitud ronda −98.2 (con signo menos).
+
+Si no se conoce la ubicación se deja vacío; ningún dato se calcula ni se estima. Solo se guardan las filas que cambiaron. La columna «Personas» es el número de personas distintas asociadas a la institución.""",
+
+    "instituciones.solo_sin_coordenadas": """Muestra únicamente las instituciones que todavía no tienen su ubicación exacta registrada, para capturarlas más rápido.""",
 }
 
 

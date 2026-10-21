@@ -45,6 +45,7 @@ En *SQL Editor* ejecuta cada archivo de `supabase/migrations/`, uno por uno, esp
 | 7 | `V008_disponibilidad_personas.sql` | Tabla de disponibilidad manual por persona. |
 | 8 | `V009_unificar_redaccion.sql` | *(Opcional, modifica datos con respaldo.)* Unifica «MASCULINO/masculino» → «Masculino», etc. Lee antes MIGRACIONES.md. |
 | 9 | `V010_unificar_sin_dato.sql` | *(Opcional, modifica datos con respaldo.)* Unifica «Sin información / Sin dato / indefinido» → «Indefinido». |
+| 10 | `V011_ubicacion_instituciones.sql` | *(Opcional.)* Columnas nuevas para el tipo y la ubicación de universidades y escuelas. Solo agrega; no cambia datos ni permisos. |
 
 (No existe V006: se difirió a propósito; ver `docs/DECISIONES_Y_CAMBIOS.md`.)
 Detalle, verificación y rollback de cada una: [MIGRACIONES.md](MIGRACIONES.md).

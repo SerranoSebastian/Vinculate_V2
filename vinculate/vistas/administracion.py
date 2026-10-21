@@ -13,10 +13,13 @@ import streamlit as st
 from ..auth import servicio as auth_servicio
 from ..auth.sesion import Sesion, actual
 from ..components import ui
+from ..config import ayudas
 from ..core.constantes import ACTIONS, MODULES, SIN_DATO
 from ..repositories.admin import RepoAdmin
 from ..repositories.errores import ErrorDatos
-from ..services import datos, estado, prioridades, respaldos, usuarios
+from ..core import puntos
+from ..core.ubicacion import MUNICIPIOS_TLAXCALA
+from ..services import datos, estado, instituciones, prioridades, respaldos, usuarios
 from ..services.guardado import ZONA, ahora_mx
 
 APARTADOS = {
@@ -24,6 +27,7 @@ APARTADOS = {
     "usuarios": ("👤 Usuarios", "usuarios", "view"),
     "permisos": ("🔐 Permisos", "usuarios", "edit"),
     "equipos": ("💻 Computadoras", "dispositivos", "view"),
+    "instituciones": ("🏫 Instituciones", "administracion", "edit"),
     "prioridades": ("⏰ Prioridades", "prioridades", "view"),
     "auditoria": ("🧾 Auditoría", "auditoria", "view"),
     "respaldos": ("💾 Respaldos e historial", "respaldos", "export"),
@@ -302,6 +306,69 @@ def _aplicar_equipo(sesion: Sesion, uid: str, did: str, nombre: str, autorizado:
         ui.mostrar_error(exc)
 
 
+# ---------------------------------------------------------------- instituciones
+def _instituciones(sesion: Sesion) -> None:
+    """Captura del tipo, municipio y coordenadas exactas de las instituciones que ya tienen personas (para el Mapa territorial)."""
+    if not sesion.puede("personas", "view"):
+        ui.vacio("Para ver las instituciones tu perfil necesita poder consultar Personas.")
+        return
+    if not instituciones.habilitada(sesion):
+        st.info("La base todavía no tiene las columnas de ubicación de instituciones (migración V011). Aplícala en Supabase para poder "
+                "capturar coordenadas; mientras tanto no se inventa ninguna ubicación.")
+        return
+    try:
+        cat = instituciones.catalogo(sesion)
+    except ErrorDatos as exc:
+        ui.mostrar_error(exc)
+        return
+    d = instituciones.directorio(datos.personas(sesion), cat)
+    if d.empty:
+        ui.vacio("Todavía no hay personas con una institución registrada.")
+        return
+    ok, sin, mal = puntos.puntos_validos(d)
+    c = st.columns(4)
+    ui.kpi("Instituciones con personas", len(d), contenedor=c[0], info="instituciones.kpi_total")
+    ui.kpi("Con coordenadas", len(ok), contenedor=c[1], info="instituciones.kpi_con_coordenadas")
+    ui.kpi("Sin coordenadas", len(sin), contenedor=c[2], info="instituciones.kpi_sin_coordenadas")
+    ui.kpi("Sin tipo", int((d["Tipo"] == "").sum()), contenedor=c[3], info="instituciones.kpi_sin_tipo")
+    if len(mal):
+        st.warning(f"{len(mal)} institución(es) tienen coordenadas con problema: " + "; ".join(f"{r['Institución']} ({r['Problema']})" for _, r in mal.iterrows()))
+    st.markdown("#### Tipo y ubicación exacta")
+    ui.ayuda_grafica("instituciones.editor", fila_propia=True)
+    ui.nota("En Google Maps: clic derecho sobre el lugar → clic en los números de arriba (se copian como 19.31390, -98.24040) → pégalos en "
+            "«Pegar (lat, lon)». O escribe latitud (≈ 19.3) y longitud (≈ −98.2, con signo menos) por separado. Deja vacío lo que no sepas: nada se estima.")
+    solo_sin = st.toggle("Mostrar solo las que no tienen coordenadas", key="adm_inst_solo_sin", help=ayudas.texto("instituciones.solo_sin_coordenadas"))
+    base = d[d["Latitud"].map(puntos.parsear_numero).isna() | d["Longitud"].map(puntos.parsear_numero).isna()] if solo_sin else d
+    base = base.reset_index(drop=True)
+    vista = base[["Institución", "Personas", "Tipo", "Municipio", "Latitud", "Longitud"]].copy()
+    vista["Tipo"] = vista["Tipo"].replace("", None)
+    vista["Municipio"] = vista["Municipio"].replace("", None)
+    vista["Latitud"] = pd.to_numeric(vista["Latitud"], errors="coerce")
+    vista["Longitud"] = pd.to_numeric(vista["Longitud"], errors="coerce")
+    vista["Pegar (lat, lon)"] = ""
+    n = st.session_state.get("_inst_reinicio", 0)
+    editado = st.data_editor(
+        vista, hide_index=True, width="stretch", num_rows="fixed", key=f"ed_inst_{n}_{int(solo_sin)}", height=420,
+        disabled=["Institución", "Personas"],
+        column_config={
+            "Tipo": st.column_config.SelectboxColumn("Tipo", options=list(instituciones.TIPOS)),
+            "Municipio": st.column_config.SelectboxColumn("Municipio", options=[*MUNICIPIOS_TLAXCALA, instituciones.FUERA_DE_TLAXCALA]),
+            "Latitud": st.column_config.NumberColumn("Latitud", format="%.6f", help="≈ 19.3 en Tlaxcala"),
+            "Longitud": st.column_config.NumberColumn("Longitud", format="%.6f", help="≈ −98.2 en Tlaxcala (negativa)"),
+            "Pegar (lat, lon)": st.column_config.TextColumn("Pegar (lat, lon)", help="Ej.: 19.31390, -98.24040 (lo que copia Google Maps)"),
+        })
+    if st.button("💾 Guardar instituciones", type="primary", key="btn_guardar_inst"):
+        guardadas, errores = instituciones.guardar_lote(sesion, base, editado)
+        for e in errores:
+            st.error(e)
+        if guardadas:
+            st.session_state["_inst_reinicio"] = n + 1
+            st.toast(f"Instituciones guardadas: {', '.join(guardadas)}.", icon="✅")
+            st.rerun()
+        elif not errores:
+            st.info("No hay cambios por guardar.")
+
+
 # ----------------------------------------------------------------- prioridades
 def _prioridades(sesion: Sesion) -> None:
     filas = prioridades.listar(sesion)
@@ -464,7 +531,7 @@ def render() -> None:
         st.session_state["adm_apartado"] = llaves[0]
     elegido = st.segmented_control("Apartado", llaves, key="adm_apartado", label_visibility="collapsed") or llaves[0]
     clave = next(k for k, v in visibles.items() if v == elegido)
-    {"estado": _estado, "usuarios": _usuarios, "permisos": _permisos, "equipos": _equipos, "prioridades": _prioridades,
+    {"estado": _estado, "usuarios": _usuarios, "permisos": _permisos, "equipos": _equipos, "instituciones": _instituciones, "prioridades": _prioridades,
      "auditoria": _auditoria, "respaldos": _respaldos}[clave](sesion)
 
 

@@ -3,7 +3,9 @@
 * 👥 Personas: se cuentan por MUNICIPIO (campo que ya existe), nunca por dirección. Los municipios se colorean.
 * 🏭 Empresas: un punto por empresa en sus COORDENADAS EXACTAS (las que alguien capturó; nada se geocodifica ni se estima).
   Cada empresa tiene su propio color y tamaño según sus vacantes, así las del mismo giro no se confunden.
-* Las dos capas se pueden ver juntas o por separado en el mismo mapa. Una empresa sin coordenadas jamás bloquea la página: se lista aparte.
+* 🏫 Instituciones educativas: un punto por universidad o escuela que ya tiene personas asociadas, en las coordenadas que administración
+  capturó. Cada institución tiene su color (paleta distinta a la de empresas) y un contorno oscuro; se pueden filtrar por tipo.
+* Las capas se pueden ver juntas o por separado en el mismo mapa. Una empresa sin coordenadas jamás bloquea la página: se lista aparte.
 * Los límites municipales vienen de geo/tlaxcala_municipios.geojson (validado). Sin ese archivo, las empresas igual se dibujan.
 """
 from __future__ import annotations
@@ -23,7 +25,7 @@ from ..core.constantes import SIN_DATO
 from ..core.ridet import region_de_municipio
 from ..core.texto import normalizar_texto
 from ..repositories.errores import ErrorDatos
-from ..services import datos, empresas
+from ..services import datos, empresas, instituciones
 from . import ficha
 
 ARCHIVO_GEO = GEO / "tlaxcala_municipios.geojson"
@@ -40,6 +42,7 @@ FONDOS = {
 TODO_EL_ESTADO = "Todo Tlaxcala"
 CONFIG_MAPA = {**charts.CONFIG, "displayModeBar": "hover", "scrollZoom": True, "displaylogo": False,
                "modeBarButtonsToRemove": ["select2d", "lasso2d"]}
+ETIQUETA_INST = "§inst"   # primer dato de customdata de los puntos de instituciones (los de empresas llevan el nombre)
 _CENTRO_DEFECTO, _ZOOM_DEFECTO = {"lon": -98.2, "lat": 19.4}, 8.5
 
 
@@ -97,8 +100,13 @@ def _serie_capa(sesion: Sesion, capa: str):
     return v["_municipio"], v, ["ID Vacante", "Empresa", "Tipo de Vacante", "Estado"], ""
 
 
-def _vista(lim, enfoque: str, geojson: dict | None, pts: pd.DataFrame):
-    """(centro, zoom) según lo que el usuario quiere acercar: todo el estado, un municipio o una empresa."""
+def _vista(lim, enfoque: str, geojson: dict | None, pts: pd.DataFrame, inst: pd.DataFrame | None = None):
+    """(centro, zoom) según lo que el usuario quiere acercar: todo el estado, un municipio, una empresa o una institución."""
+    inst = pd.DataFrame() if inst is None else inst
+    if enfoque.startswith("Institución: "):
+        fila = inst[inst["Institución"].eq(enfoque[13:])]
+        if not fila.empty:
+            return {"lon": float(fila.iloc[0]["Longitud"]), "lat": float(fila.iloc[0]["Latitud"])}, 15.0
     if enfoque.startswith("Empresa: "):
         fila = pts[pts["Empresa"].eq(enfoque[9:])]
         if not fila.empty:
@@ -110,20 +118,24 @@ def _vista(lim, enfoque: str, geojson: dict | None, pts: pd.DataFrame):
             return nucleo.vista_para(lm)
     if lim:
         return nucleo.vista_para(lim)
-    if not pts.empty:
-        lm = (pts["Longitud"].min() - 0.03, pts["Latitud"].min() - 0.03, pts["Longitud"].max() + 0.03, pts["Latitud"].max() + 0.03)
+    todos = pd.concat([x[["Latitud", "Longitud"]] for x in (pts, inst) if not x.empty], ignore_index=True) if (not pts.empty or not inst.empty) else None
+    if todos is not None:
+        lm = (todos["Longitud"].min() - 0.03, todos["Latitud"].min() - 0.03, todos["Longitud"].max() + 0.03, todos["Latitud"].max() + 0.03)
         return nucleo.vista_para(lm)
     return _CENTRO_DEFECTO, _ZOOM_DEFECTO
 
 
 def _figura(conteos: pd.DataFrame | None, geojson: dict | None, pts: pd.DataFrame, colores: dict[str, str], *, estilo: str,
-            enfoque: str, titulo: str, mostrar_leyenda: bool) -> go.Figure:
+            enfoque: str, titulo: str, mostrar_leyenda: bool, inst: pd.DataFrame | None = None,
+            colores_inst: dict[str, str] | None = None) -> go.Figure:
     """UN solo mapa: municipios (coloreados o neutros) + un punto por empresa en sus coordenadas.
 
     Con el estilo «white-bg» no se descarga nada externo; los fondos CARTO / OpenStreetMap piden sus teselas al navegador.
     Si no cargaran (red bloqueada), los municipios y los puntos se ven igual."""
     lim = nucleo.limites(geojson) if geojson else None
-    centro, zoom = _vista(lim, enfoque, geojson, pts)
+    inst = pd.DataFrame() if inst is None else inst
+    colores_inst = colores_inst or {}
+    centro, zoom = _vista(lim, enfoque, geojson, pts, inst)
     fig = go.Figure()
     con_fondo = estilo != "white-bg"
     if geojson:
@@ -148,13 +160,27 @@ def _figura(conteos: pd.DataFrame | None, geojson: dict | None, pts: pd.DataFram
         for _, r in pts.iterrows():
             fig.add_trace(go.Scattermap(
                 lat=[r["lat_mapa"]], lon=[r["lon_mapa"]], mode="markers", name=str(r["Empresa"]), showlegend=mostrar_leyenda,
+                legendgroup="empresas", legendgrouptitle_text="Empresas",
                 marker={"size": puntos.tamano_marcador(r["Vacantes"]), "color": colores.get(r["Empresa"], "#444444")},
                 customdata=[[r["Empresa"], r["Sector"] or SIN_DATO, r["Municipio"] or SIN_DATO, int(r["Vacantes"]), int(r["Vigentes"]),
                              round(float(r["Latitud"]), 6), round(float(r["Longitud"]), 6)]],
                 hovertemplate=("<b>%{customdata[0]}</b><br>%{customdata[1]} · %{customdata[2]}<br>Vacantes: %{customdata[3]} "
                                "(vigentes: %{customdata[4]})<br>%{customdata[5]}, %{customdata[6]}<extra></extra>")))
+    if not inst.empty:
+        # contorno OSCURO bajo cada institución: así se distingue de las empresas (que llevan contorno blanco) aunque coincidan los colores
+        fig.add_trace(go.Scattermap(lat=inst["lat_mapa"], lon=inst["lon_mapa"], mode="markers", hoverinfo="skip", showlegend=False,
+                                    marker={"size": [puntos.tamano_marcador(v) + 7 for v in inst["Personas"]], "color": "#1B1B1B", "opacity": 0.95}))
+        for _, r in inst.iterrows():
+            fig.add_trace(go.Scattermap(
+                lat=[r["lat_mapa"]], lon=[r["lon_mapa"]], mode="markers", name="🏫 " + str(r["Institución"]), showlegend=mostrar_leyenda,
+                legendgroup="instituciones", legendgrouptitle_text="Instituciones educativas",
+                marker={"size": puntos.tamano_marcador(r["Personas"]), "color": colores_inst.get(r["Institución"], "#444444")},
+                customdata=[[ETIQUETA_INST, r["Institución"], r["Tipo"] or SIN_DATO, r["Municipio"] or SIN_DATO, int(r["Personas"]),
+                             round(float(r["Latitud"]), 6), round(float(r["Longitud"]), 6)]],
+                hovertemplate=("🏫 <b>%{customdata[1]}</b><br>%{customdata[2]} · %{customdata[3]}<br>Personas: %{customdata[4]}"
+                               "<br>%{customdata[5]}, %{customdata[6]}<extra></extra>")))
     fig.update_layout(title=titulo, map={"style": estilo, "center": centro, "zoom": zoom}, uirevision=f"mapa|{enfoque}|{estilo}",
-                      legend={"orientation": "v", "x": 1.01, "y": 1, "font": {"size": 11}, "title": {"text": "Empresas (clic oculta/muestra)"}})
+                      legend={"orientation": "v", "x": 1.01, "y": 1, "font": {"size": 11}, "title": {"text": "Clic oculta/muestra"}})
     return tema_grafica(fig, 640)
 
 
@@ -168,6 +194,8 @@ def _seleccion(ev) -> tuple[str, str] | None:
         return None
     p = pts[0]
     cd = p.get("customdata")
+    if cd and isinstance(cd, (list, tuple)) and len(cd) > 1 and cd[0] == ETIQUETA_INST:
+        return "institucion", str(cd[1])
     if cd:
         return "empresa", str(cd[0] if isinstance(cd, (list, tuple)) else cd)
     if p.get("location"):
@@ -206,10 +234,24 @@ def _bloque_empresas(sesion: Sesion):
     return dir_, ok, sin, mal, True
 
 
+def _bloque_instituciones(sesion: Sesion):
+    """(directorio, puntos válidos, sin coordenadas, con problema, hay columnas V011) de las instituciones con personas."""
+    pers = datos.personas(sesion)
+    try:
+        cat = instituciones.catalogo(sesion)
+    except ErrorDatos:
+        cat = pd.DataFrame()
+    dir_ = instituciones.directorio(pers, cat)
+    if not instituciones.habilitada(sesion):
+        return dir_, dir_.iloc[0:0], dir_, dir_.iloc[0:0], False
+    ok, sin, mal = puntos.puntos_validos(dir_)
+    return dir_, ok, sin, mal, True
+
+
 @ui.protegido
 def render() -> None:
     sesion = actual()
-    ui.encabezado("Mapa territorial", "Personas por municipio y empresas en su ubicación exacta, en un solo mapa.", "🗺️")
+    ui.encabezado("Mapa territorial", "Personas por municipio, empresas e instituciones educativas en su ubicación exacta, en un solo mapa.", "🗺️")
     ver_personas = sesion.puede("personas", "view")
     ver_vacantes = sesion.puede("vacantes", "view")
     if not (ver_personas or ver_vacantes):
@@ -218,13 +260,16 @@ def render() -> None:
 
     # ---- casillas: qué capas ver
     st.markdown("**Qué quieres ver en el mapa**")
-    k1, k2, k3 = st.columns([1, 1, 2])
+    k1, k2, k3, k4 = st.columns([1, 1, 1, 1])
     capa_personas = k1.checkbox("👥 Personas (por municipio)", value=ver_personas, key="mapa_personas", disabled=not ver_personas,
                                 help=ayudas.texto("mapa.casilla_personas") if ver_personas else "Tu perfil no puede ver Personas.")
     capa_empresas = k2.checkbox("🏭 Empresas (ubicación exacta)", value=ver_vacantes, key="mapa_empresas", disabled=not ver_vacantes,
                                 help=ayudas.texto("mapa.casilla_empresas") if ver_vacantes else "Tu perfil no puede ver Vacantes.")
+    capa_inst = k3.checkbox("🏫 Instituciones educativas", value=False, key="mapa_instituciones", disabled=not ver_personas,
+                            help=ayudas.texto("mapa.casilla_instituciones") if ver_personas else "Tu perfil no puede ver Personas.")
     capa_personas = capa_personas and ver_personas
     capa_empresas = capa_empresas and ver_vacantes
+    capa_inst = capa_inst and ver_personas
 
     # ---- datos de cada capa
     medida = st.session_state.get("mapa_contar", "personas")
@@ -241,8 +286,14 @@ def render() -> None:
     if capa_empresas:
         dir_, ok, sin, mal, hay_coords = _bloque_empresas(sesion)
 
+    dir_i = ok_i = sin_i = mal_i = None
+    hay_cols_i = True
+    if capa_inst:
+        dir_i, ok_i, sin_i, mal_i, hay_cols_i = _bloque_instituciones(sesion)
+
     # ---- opciones
     estilo, enfoque, separar, solo_vigentes, elegidas = "carto-positron", TODO_EL_ESTADO, True, False, None
+    tipos_i, elegidas_i = list(instituciones.TIPOS), None
     res = _geo(_firma_geo())
     geo = res.geojson if (res is not None and res.ok) else None
     with st.expander("⚙️ Opciones del mapa", expanded=False):
@@ -257,11 +308,18 @@ def render() -> None:
             separar = e2.toggle("Separar empresas que comparten ubicación (solo visual)", value=True, key="mapa_separar",
                                 help=ayudas.texto("mapa.separar_empresas"))
             elegidas = st.multiselect("Mostrar solo estas empresas", sorted(ok["Empresa"]), key="mapa_filtro_emp", placeholder="Todas")
+        if capa_inst and ok_i is not None and not ok_i.empty:
+            i1, i2 = st.columns(2)
+            tipos_i = i1.multiselect("Tipos de institución", list(instituciones.TIPOS), default=list(instituciones.TIPOS), key="mapa_tipos_inst",
+                                     help=ayudas.texto("mapa.tipos_institucion"))
+            elegidas_i = i2.multiselect("Mostrar solo estas instituciones", sorted(ok_i["Institución"]), key="mapa_filtro_inst", placeholder="Todas")
         opciones_enfoque = [TODO_EL_ESTADO]
         if geo:
             opciones_enfoque += ["Municipio: " + m for m in sorted(f["properties"]["municipio"] for f in geo["features"])]
         if capa_empresas and ok is not None and not ok.empty:
             opciones_enfoque += ["Empresa: " + e for e in sorted(ok["Empresa"])]
+        if capa_inst and ok_i is not None and not ok_i.empty:
+            opciones_enfoque += ["Institución: " + e for e in sorted(ok_i["Institución"])]
         enfoque = st.selectbox("Acercar a", opciones_enfoque, key="mapa_enfocar")
 
     # ---- empresas visibles
@@ -275,6 +333,18 @@ def render() -> None:
         if elegidas:
             pts = pts[pts["Empresa"].isin(elegidas)]
         pts = puntos.separar_superpuestos(pts) if separar else pts.assign(lat_mapa=pts["Latitud"], lon_mapa=pts["Longitud"])
+
+    # ---- instituciones visibles
+    pts_i = pd.DataFrame()
+    colores_i: dict[str, str] = {}
+    if capa_inst and ok_i is not None and not ok_i.empty:
+        colores_i = puntos.asignar_colores(ok_i["Institución"].tolist(), puntos.PALETA_INSTITUCIONES)  # colores fijos aunque se filtren
+        pts_i = ok_i
+        if tipos_i != list(instituciones.TIPOS):
+            pts_i = pts_i[pts_i["Tipo"].isin(tipos_i)]
+        if elegidas_i:
+            pts_i = pts_i[pts_i["Institución"].isin(elegidas_i)]
+        pts_i = puntos.separar_superpuestos(pts_i, col="Institución")
 
     # ---- indicadores
     if capa_personas and aviso == "sin_ubicacion":
@@ -305,28 +375,46 @@ def render() -> None:
         if fuera:
             st.warning(f"{fuera} empresa(s) tienen coordenadas fuera de Tlaxcala. Si no deberían, revísalas (¿latitud y longitud invertidas?).")
 
-    if not capa_personas and not capa_empresas:
-        ui.vacio("Marca al menos una casilla (Personas o Empresas) para dibujar el mapa.")
+    if capa_inst and dir_i is not None:
+        c = st.columns(4)
+        ui.kpi("Instituciones en el mapa", len(ok_i), f"de {len(dir_i)} con personas", contenedor=c[0], info="mapa.instituciones_en_mapa")
+        ui.kpi("Instituciones sin coordenadas", len(sin_i), "no se dibujan", contenedor=c[1], info="mapa.inst_sin_coordenadas")
+        ui.kpi("Instituciones con problema", len(mal_i), "coordenadas inválidas" if len(mal_i) else "", contenedor=c[2], info="mapa.inst_con_problema")
+        ui.kpi("Personas en las instituciones mostradas", int(pts_i["Personas"].sum()) if not pts_i.empty else 0, contenedor=c[3],
+               info="mapa.inst_personas_en_mapa")
+        if not hay_cols_i:
+            st.info("La base todavía no tiene las columnas de ubicación de instituciones (migración V011). Aplícala en Supabase para poder "
+                    "dibujarlas; mientras tanto no se inventa ninguna ubicación.")
+        fuera_i = int((~ok_i["En Tlaxcala"]).sum()) if not ok_i.empty else 0
+        if fuera_i:
+            st.warning(f"{fuera_i} institución(es) tienen coordenadas fuera de Tlaxcala. Si no deberían, corrígelas en Administración → Instituciones.")
+
+    if not (capa_personas or capa_empresas or capa_inst):
+        ui.vacio("Marca al menos una casilla (Personas, Empresas o Instituciones) para dibujar el mapa.")
         return
     if capa_personas and conteos is not None and conteos["Total"].sum() == 0 and not capa_empresas:
         ui.vacio("Ningún registro tiene un municipio de Tlaxcala identificado con los datos actuales.")
         return
+    if capa_inst and pts_i.empty and not capa_personas and not capa_empresas:
+        st.info("Todavía no hay instituciones con coordenadas capturadas. Administración las captura en **Administración → Instituciones** "
+                "y aparecerán aquí.")
     if capa_empresas and pts.empty and not capa_personas:
         st.info("Todavía no hay empresas con coordenadas capturadas. Captúralas en **Vacantes → Empresas** (edición rápida de coordenadas) "
                 "y aparecerán aquí.")
 
     # ---- el mapa
-    titulo = " + ".join(t for t, on in ((CONTAR[medida] + " por municipio", capa_personas and conteos is not None), ("Empresas", capa_empresas)) if on)
+    titulo = " + ".join(t for t, on in ((CONTAR[medida] + " por municipio", capa_personas and conteos is not None), ("Empresas", capa_empresas),
+                                        ("Instituciones educativas", capa_inst)) if on)
     elegido = None
-    if geo is not None or not pts.empty:
+    if geo is not None or not pts.empty or not pts_i.empty:
         if geo is None:
             _como_activar(res)
         ui.ayuda_grafica("mapa.grafica_mapa", fila_propia=True)
         ev = st.plotly_chart(_figura(conteos if capa_personas else None, geo, pts, colores, estilo=estilo, enfoque=enfoque,
-                                     titulo=titulo, mostrar_leyenda=0 < len(pts) <= 40),
+                                     titulo=titulo, mostrar_leyenda=0 < len(pts) + len(pts_i) <= 40, inst=pts_i, colores_inst=colores_i),
                              key="mapa_unico", width="stretch", config=CONFIG_MAPA, on_select="rerun", selection_mode="points")
         elegido = _seleccion(ev)
-        ui.nota("Rueda del ratón para acercar · arrastra para mover · clic en un municipio o una empresa para ver su detalle.")
+        ui.nota("Rueda del ratón para acercar · arrastra para mover · clic en un municipio, una empresa o una institución para ver su detalle.")
     else:
         _como_activar(res)
         if conteos is not None:
@@ -354,8 +442,21 @@ def render() -> None:
                 ui.ayuda_grafica("mapa.tabla_con_problema", fila_propia=True)
                 ui.tabla(mal, ["Empresa", "Latitud", "Longitud", "Problema"], altura=240)
 
+    if capa_inst and dir_i is not None and hay_cols_i:
+        if len(sin_i):
+            with st.expander(f"Instituciones sin coordenadas ({len(sin_i)})"):
+                ui.ayuda_grafica("mapa.tabla_inst_sin_coordenadas", fila_propia=True)
+                ui.nota("No se dibujan hasta que administración capture sus coordenadas en Administración → Instituciones.")
+                ui.tabla(sin_i, ["Institución", "Tipo", "Municipio", "Personas"], altura=300)
+        if len(mal_i):
+            with st.expander(f"Instituciones con coordenadas con problema ({len(mal_i)})", expanded=True):
+                ui.ayuda_grafica("mapa.tabla_inst_con_problema", fila_propia=True)
+                ui.tabla(mal_i, ["Institución", "Latitud", "Longitud", "Problema"], altura=240)
+
     # ---- detalle de lo tocado en el mapa
-    if elegido and elegido[0] == "empresa" and dir_ is not None:
+    if elegido and elegido[0] == "institucion" and dir_i is not None:
+        _detalle_institucion(sesion, elegido[1], dir_i)
+    elif elegido and elegido[0] == "empresa" and dir_ is not None:
         _detalle_empresa(sesion, elegido[1], dir_)
     elif elegido and elegido[0] == "municipio" and capa_personas and detalle is not None:
         mun = elegido[1]
@@ -388,3 +489,22 @@ def _detalle_empresa(sesion: Sesion, nombre: str, dir_: pd.DataFrame) -> None:
         ui.tabla(mias.sort_values("Fecha", ascending=False), ["ID Vacante", "Fecha", "Tipo de Vacante", "Tipo de Oportunidad", "Estado"], altura=300)
 
 
+
+
+def _detalle_institucion(sesion: Sesion, nombre: str, dir_: pd.DataFrame) -> None:
+    fila = dir_[dir_["Institución"].eq(nombre)]
+    if fila.empty:
+        return
+    f = fila.iloc[0]
+    st.markdown(f"#### 🏫 {nombre}")
+    partes = [f["Tipo"] or SIN_DATO, f["Municipio"] or SIN_DATO]
+    if f["Dirección"]:
+        partes.append(f["Dirección"] + (f" (C.P. {f['C.P.']})" if f["C.P."] else ""))
+    ui.nota(" · ".join(partes) + f" · Coordenadas: {f['Latitud']}, {f['Longitud']} · Personas: {int(f['Personas'])}")
+    pers = datos.personas(sesion)
+    mias = pers[pers["Institución"].astype(str).map(normalizar_texto).eq(normalizar_texto(nombre))] if not pers.empty else pers
+    if mias.empty:
+        ui.vacio("Esta institución no tiene personas asociadas.")
+        return
+    cols = [c for c in ("id_persona_maestro", "nombre", "carrera", "escolaridad", "municipio") if c in mias.columns]
+    ui.tabla(mias.drop_duplicates("id_persona_maestro") if "id_persona_maestro" in mias.columns else mias, cols, altura=300)
