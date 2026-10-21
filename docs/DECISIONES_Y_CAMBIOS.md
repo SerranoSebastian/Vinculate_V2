@@ -94,3 +94,8 @@
 
 - Textos en `vinculate/config/ayudas.py`, claves `vinculaciones.*` (23): 7 indicadores superiores, formulario de nuevo seguimiento, tabla de editar, gráficas y 4 indicadores de Estadísticas, tabla de personas, selector del historial y tabla de exportación. Las fichas del historial reutilizan las claves `personas.ficha_*`.
 - Se quitó el expander `ui.explicacion` de la parte superior. Sin cambios de base de datos ni permisos.
+
+## Administración: filtro por usuario y eliminar prioridades (2026-10-21)
+
+- Computadoras y Auditoría tienen selector «Usuario» (como Permisos): por defecto el usuario en sesión, con la opción «Todos los usuarios». La auditoría filtra en la consulta (`RepoAdmin.auditoria(uid=…)`), así que cada usuario ve sus últimos 1,000 movimientos.
+- Prioridades: se pueden eliminar una o todas las atendidas, con confirmación y auditoría (`priority_deleted`). Requiere el permiso `prioridades.delete`; la política RLS `priorities_delete` ya existía, no hay migración.

@@ -148,3 +148,27 @@ def test_busqueda_no_ve_lo_que_no_puede(db):
     s = _sesion(db, vacantes=("view",))
     r = busqueda.buscar(s, "luis")
     assert "personas" not in r
+
+
+def test_eliminar_prioridades_requiere_permiso_y_quita_del_historial(db):
+    db.tablas["app_priorities"] = [
+        {"id": 1, "title": "activa", "priority_level": "alta", "active": True},
+        {"id": 2, "title": "atendida", "priority_level": "normal", "active": False},
+        {"id": 3, "title": "otra atendida", "priority_level": "normal", "active": False}]
+    sin_permiso = _sesion(db, prioridades=("view", "edit"))
+    with pytest.raises(SinPermiso):
+        prioridades.eliminar(sin_permiso, [2])
+    assert len(db.tablas["app_priorities"]) == 3
+    s = _sesion(db, prioridades=("view", "delete"))
+    prioridades.eliminar(s, [2, 3], "2 prioridades atendidas")
+    assert [f["id"] for f in prioridades.listar(s)] == [1]
+
+
+def test_auditoria_se_filtra_por_usuario(db):
+    from vinculate.repositories.admin import RepoAdmin
+    db.tablas["app_audit_log"] = [
+        {"id": 1, "user_id": "u1", "email": "a@x.com", "action": "login", "created_at": "2026-10-01T00:00:00+00:00"},
+        {"id": 2, "user_id": "u2", "email": "b@x.com", "action": "login", "created_at": "2026-10-02T00:00:00+00:00"}]
+    repo = RepoAdmin(db)
+    assert [f["email"] for f in repo.auditoria(uid="u2")] == ["b@x.com"]
+    assert len(repo.auditoria()) == 2

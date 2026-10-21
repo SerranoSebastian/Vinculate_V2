@@ -67,6 +67,16 @@ def cerrar(sesion: Sesion, prioridad_id: int, titulo: str = "") -> None:
     auth_servicio.auditar("priority_completed", titulo or str(prioridad_id))
 
 
+def eliminar(sesion: Sesion, ids: list[int], descripcion: str = "") -> None:
+    """Elimina prioridades (activas o atendidas) para que ya no salgan en el historial. Requiere `prioridades.delete`."""
+    if not sesion.puede("prioridades", "delete"):
+        raise SinPermiso("Tu perfil no tiene permiso para eliminar prioridades.")
+    if not ids:
+        return
+    RepoAdmin(sesion.cliente).eliminar_prioridades([int(i) for i in ids])
+    auth_servicio.auditar("priority_deleted", descripcion or ", ".join(str(i) for i in ids))
+
+
 def para_toast(sesion: Sesion, maximo: int = 5, pendientes_ya: list[dict] | None = None) -> list[dict]:
     """Avisos que toca mostrar como toast ahora (respeta `repeat_minutes` por usuario) y los marca como vistos.
 

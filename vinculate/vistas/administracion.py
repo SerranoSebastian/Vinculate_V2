@@ -30,6 +30,9 @@ APARTADOS = {
 }
 
 
+TODOS_USUARIOS = "Todos los usuarios"
+
+
 def hay_algo_que_administrar(sesion: Sesion) -> bool:
     return any(sesion.puede(m, a) for _, m, a in APARTADOS.values()) or sesion.puede("administracion", "view")
 
@@ -236,6 +239,18 @@ def _equipos(sesion: Sesion) -> None:
         ui.vacio("Todavía no hay equipos registrados.")
         return
     nombres = {p["user_id"]: (p.get("display_name") or p.get("email")) for p in repo.perfiles()} if sesion.puede("usuarios", "view") else {}
+    elegido_u = None
+    if nombres:
+        etiquetas_u = {str(nombres[uid]): uid for uid in sorted({e.get("user_id") for e in equipos if e.get("user_id") in nombres},
+                                                                key=lambda u: str(nombres[u]).lower())}
+        opciones_u = [*etiquetas_u, TODOS_USUARIOS]
+        propio = str(nombres.get(sesion.user_id, ""))
+        elegido_u = st.selectbox("Usuario", opciones_u, index=opciones_u.index(propio) if propio in opciones_u else 0, key="adm_equipos_usuario")
+        if elegido_u != TODOS_USUARIOS:
+            equipos = [e for e in equipos if e.get("user_id") == etiquetas_u[elegido_u]]
+        if not equipos:
+            ui.vacio("Este usuario todavía no tiene equipos registrados.")
+            return
     ahora = datetime.now(timezone.utc)
     filas = []
     for e in equipos:
@@ -258,7 +273,8 @@ def _equipos(sesion: Sesion) -> None:
             "aparecerá como un equipo nuevo pendiente de autorización.")
     if not sesion.puede("dispositivos", "edit"):
         return
-    opciones = {f"{r['Usuario']} · {r['Equipo']} · {str(r['_did'])[:8]}": r for r in filas}
+    opciones = {(f"{r['Equipo']} · {str(r['_did'])[:8]}" if elegido_u not in (None, TODOS_USUARIOS)
+                 else f"{r['Usuario']} · {r['Equipo']} · {str(r['_did'])[:8]}"): r for r in filas}
     elegido = st.selectbox("Administrar equipo", list(opciones), key="adm_equipo")
     r = opciones[elegido]
     deseado = st.toggle("Equipo autorizado", value=r["Autorizado"] == "Sí", key=f"adm_eq_auth_{r['_did']}")
@@ -332,13 +348,53 @@ def _prioridades(sesion: Sesion) -> None:
                 st.rerun()
             except Exception as exc:  # noqa: BLE001
                 ui.mostrar_error(exc)
+    _eliminar_prioridades(sesion, filas)
+
+
+def _eliminar_prioridades(sesion: Sesion, filas: list[dict]) -> None:
+    """Eliminar una prioridad o todas las atendidas, siempre con confirmación."""
+    if not filas or not sesion.puede("prioridades", "delete"):
+        return
+    st.markdown("**Eliminar del historial**")
+    opciones = {f"#{f['id']} · {f.get('title')} · {'Activa' if f.get('active') else 'Atendida'}": f for f in filas}
+    elegido = st.selectbox("Prioridad a eliminar", list(opciones), key="adm_prio_eliminar")
+    atendidas = [f for f in filas if not f.get("active")]
+    c1, c2 = st.columns(2)
+    if c1.button("🗑️ Eliminar esta prioridad", key="adm_prio_del"):
+        f = opciones[elegido]
+        st.session_state["_prio_eliminar"] = ([f["id"]], str(f.get("title") or f["id"]))
+        ui.pedir_confirmacion("prio_eliminar", "Eliminar prioridad", [
+            f"Se eliminará «{f.get('title')}» y ya no aparecerá en el historial ni en los avisos.",
+            "Esta acción no se puede deshacer."], "Eliminar")
+    if atendidas and c2.button(f"🧹 Eliminar las {len(atendidas)} atendidas", key="adm_prio_del_atendidas"):
+        st.session_state["_prio_eliminar"] = ([f["id"] for f in atendidas], f"{len(atendidas)} prioridades atendidas")
+        ui.pedir_confirmacion("prio_eliminar", "Eliminar prioridades atendidas", [
+            f"Se eliminarán {len(atendidas)} prioridades ya atendidas y dejarán de aparecer en el historial.",
+            "Las prioridades activas no se tocan. Esta acción no se puede deshacer."], "Eliminar")
+    if ui.confirmado("prio_eliminar"):
+        ids, descripcion = st.session_state.pop("_prio_eliminar", ([], ""))
+        try:
+            prioridades.eliminar(sesion, ids, descripcion)
+            st.success("Prioridad(es) eliminada(s).")
+            st.rerun()
+        except Exception as exc:  # noqa: BLE001
+            ui.mostrar_error(exc)
 
 
 # ------------------------------------------------------------------- auditoría
 def _auditoria(sesion: Sesion) -> None:
-    filas = RepoAdmin(sesion.cliente).auditoria(limite=1000)
+    repo = RepoAdmin(sesion.cliente)
+    uid = None
+    if sesion.puede("usuarios", "view"):
+        perfiles = repo.perfiles()
+        etiquetas = {_etiqueta_cuenta(p): str(p["user_id"]) for p in sorted(perfiles, key=lambda p: str(p.get("display_name") or p.get("email")).lower())}
+        opciones = [*etiquetas, TODOS_USUARIOS]
+        propio = next((k for k, v in etiquetas.items() if v == str(sesion.user_id)), None)
+        elegido = st.selectbox("Usuario", opciones, index=opciones.index(propio) if propio else 0, key="adm_aud_usuario")
+        uid = None if elegido == TODOS_USUARIOS else etiquetas[elegido]
+    filas = repo.auditoria(limite=1000, uid=uid)
     if not filas:
-        ui.vacio("Aún no hay movimientos de auditoría.")
+        ui.vacio("Este usuario aún no tiene movimientos de auditoría." if uid else "Aún no hay movimientos de auditoría.")
         return
     df = pd.DataFrame(filas)
     df["fecha"] = df.get("created_at", "").map(_hora_mx)

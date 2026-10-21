@@ -65,8 +65,11 @@ class RepoAdmin:
     def registrar_auditoria(self, carga: dict) -> None:
         _ejecutar(self.c.table("app_audit_log").insert(carga), "el registro de auditoría")
 
-    def auditoria(self, limite: int = 500) -> list[dict]:
-        r = _ejecutar(self.c.table("app_audit_log").select("*").order("created_at", desc=True).limit(limite), "la consulta de auditoría")
+    def auditoria(self, limite: int = 500, uid: str | None = None) -> list[dict]:
+        q = self.c.table("app_audit_log").select("*")
+        if uid:
+            q = q.eq("user_id", uid)
+        r = _ejecutar(q.order("created_at", desc=True).limit(limite), "la consulta de auditoría")
         return r.data or []
 
     # --- prioridades ----------------------------------------------------------
@@ -83,6 +86,11 @@ class RepoAdmin:
         _ejecutar(self.c.table("app_priorities").update(
             {"active": False, "completed_at": datetime.now(timezone.utc).isoformat()}).eq("id", prioridad_id),
             "el cierre de la prioridad")
+
+    def eliminar_prioridades(self, ids: list[int]) -> None:
+        """Borra las prioridades indicadas (sus avisos se borran en cascada)."""
+        for pid in ids:
+            _ejecutar(self.c.table("app_priorities").delete().eq("id", pid), "la eliminación de la prioridad")
 
     def ultimo_aviso(self, prioridad_id: int, uid: str) -> str | None:
         r = _ejecutar(self.c.table("app_priority_notifications").select("last_seen_at")
