@@ -126,3 +126,9 @@
 - La búsqueda de texto del Explorador ahora mira solo nombres e identificadores (nombre, ID, teléfono, correo / empresa, puesto), no todo el renglón.
 - **Menú:** «Búsqueda» ya no aparece en Consulta. La página de resultados sigue existiendo (oculta) porque el buscador global del lateral la usa; si la versión de Streamlit no soporta páginas ocultas, aparece en el menú sin otro efecto.
 - Sin migraciones ni cambios en datos, permisos o RLS.
+
+## Explorador y Inicio ejecutivo cuentan a las mismas personas
+
+- En Explorador → Personas, los filtros se evalúan sobre los registros históricos de cada persona (misma regla que `filtros.aplicar_personas` del Inicio): una persona cuenta si al menos un registro cumple todos los filtros a la vez. Después se muestra su fila de persona única. El resultado coincide con «Personas únicas» del Inicio con los mismos filtros.
+- La columna «municipio» de la tabla sigue mostrando el dato más reciente de la persona; se avisa en pantalla cuando hay filtros activos.
+- Función: `core/explorador.aplicar_a_personas`, con prueba que compara contra el Inicio. Sin cambios en datos.

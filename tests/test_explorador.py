@@ -37,9 +37,30 @@ def test_varios_filtros_son_y_varias_opciones_son_o(personas):
 
 
 def test_columnas_con_varios_valores(personas):
-    assert list(ex.aplicar(personas, "personas", {"años_con_registro": ["2024"]})["id_persona_maestro"]) == ["PER-2", "PER-3"]
-    assert list(ex.aplicar(personas, "personas", {"tipos_vinculacion": ["Capacitación"]})["id_persona_maestro"]) == ["PER-2", "PER-3"]
     assert ex.opciones(personas, "años_con_registro", True) == ["2024", "2023", "Indefinido"]
+    assert ex.opciones(personas, "tipos_vinculacion", True) == ["Capacitación", "Empleo"]
+
+
+def test_personas_cuentan_igual_que_el_inicio_ejecutivo():
+    """Una persona con un registro en Huamantla y otro más reciente en Apizaco cuenta en Huamantla, como en Inicio."""
+    from vinculate.components import filtros
+
+    hist = pd.DataFrame({
+        "id_persona_maestro": ["P1", "P1", "P2", "P3"], "municipio": ["HUAMANTLA", "Apizaco", "HUAMANTLA", "Apizaco"],
+        "sexo": ["Femenino", "Femenino", "Masculino", "Femenino"], "vinculacion": ["Empleo", "Empleo", "Empleo", "Empleo"],
+        "Año": ["2023", "2024", "2024", "2024"], "año": pd.array([2023, 2024, 2024, 2024], dtype="Int64"),
+    })
+    maestras = pd.DataFrame({"id_persona_maestro": ["P1", "P2", "P3"], "nombre": ["Ana", "Beto", "Cris"],
+                             "municipio": ["Apizaco", "HUAMANTLA", "Apizaco"]})
+    inicio = filtros.aplicar_personas(hist, filtros.FiltrosInicio(municipios=["HUAMANTLA"]))
+    r = ex.aplicar_a_personas(hist, maestras, {"municipio": ["HUAMANTLA"]})
+    assert set(r["id_persona_maestro"]) == set(inicio["id_persona_maestro"]) == {"P1", "P2"}
+    # varios filtros: un MISMO registro debe cumplirlos todos (igual que Inicio)
+    inicio = filtros.aplicar_personas(hist, filtros.FiltrosInicio(municipios=["HUAMANTLA"], anios=[2024]))
+    r = ex.aplicar_a_personas(hist, maestras, {"municipio": ["HUAMANTLA"], "Año": ["2024"]})
+    assert set(r["id_persona_maestro"]) == set(inicio["id_persona_maestro"]) == {"P2"}
+    assert len(ex.aplicar_a_personas(hist, maestras, {})) == 3
+    assert list(ex.aplicar_a_personas(hist, maestras, {"municipio": ["HUAMANTLA"]}, "ana")["nombre"]) == ["Ana"]
 
 
 def test_vacios_se_filtran_como_indefinido(personas):

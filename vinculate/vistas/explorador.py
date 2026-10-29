@@ -59,6 +59,9 @@ def _filtros(clave: str, df: pd.DataFrame) -> tuple[dict[str, list[str]], str]:
     activos = [f"{etq}: {', '.join(elegidos[c])}" for c, etq, _ in filtros_exp.FILTROS[clave] if elegidos.get(c)]
     if activos:
         st.caption("Filtros activos → " + " · ".join(activos))
+    if clave == "personas" and activos:
+        st.caption("Una persona aparece si alguno de sus registros cumple los filtros (igual que en el Inicio ejecutivo). "
+                   "La columna «municipio» muestra su dato más reciente.")
     return elegidos, texto
 
 
@@ -76,8 +79,14 @@ def render() -> None:
         clave = next(iter(disponibles))
     df = _base(sesion, clave)
     total = len(df)
-    elegidos, texto = _filtros(clave, df)
-    df = filtros_exp.aplicar(df, clave, elegidos, texto).reset_index(drop=True)
+    if clave == "personas":
+        # Misma regla que el Inicio ejecutivo: los filtros se evalúan sobre los registros históricos de cada persona.
+        hist = datos.personas_dashboard(sesion)
+        elegidos, texto = _filtros(clave, hist)
+        df = filtros_exp.aplicar_a_personas(hist, df, elegidos, texto).reset_index(drop=True)
+    else:
+        elegidos, texto = _filtros(clave, df)
+        df = filtros_exp.aplicar(df, clave, elegidos, texto).reset_index(drop=True)
     hay_filtro = bool(texto.strip()) or any(elegidos.values())
 
     c1, c2 = st.columns(2)

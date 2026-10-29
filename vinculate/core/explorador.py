@@ -1,4 +1,4 @@
-"""Filtros del Explorador: cada filtro mira UNA columna (no todo el texto de la fila), para no mezclar coincidencias de otras columnas."""
+"""Filtros del Explorador (mismas reglas que los filtros del Inicio ejecutivo): cada filtro mira UNA columna (no todo el texto de la fila), para no mezclar coincidencias de otras columnas."""
 from __future__ import annotations
 
 import pandas as pd
@@ -12,7 +12,7 @@ FILTROS: dict[str, list[tuple[str, str, bool]]] = {
     "personas": [
         ("municipio", "Municipio / estado", False), ("sexo", "Sexo", False), ("escolaridad", "Escolaridad", False),
         ("carrera", "Carrera", False), ("Institución", "Institución", False), ("grupo_prioritario", "Grupo prioritario", False),
-        ("tipos_vinculacion", "Tipo de vinculación", True), ("años_con_registro", "Año de registro", True),
+        ("vinculacion", "Tipo de vinculación", False), ("Año", "Año de registro", False),
     ],
     "historicos": [
         ("municipio", "Municipio / estado", False), ("sexo", "Sexo", False), ("escolaridad", "Escolaridad", False),
@@ -95,3 +95,17 @@ def aplicar(df: pd.DataFrame, clave: str, elegidos: dict[str, list[str]], texto:
         else:
             mask &= False
     return df[mask]
+
+
+def aplicar_a_personas(historicos: pd.DataFrame, maestras: pd.DataFrame, elegidos: dict[str, list[str]], texto: str = "") -> pd.DataFrame:
+    """Personas (una fila cada una) con la MISMA regla del Inicio ejecutivo.
+
+    Los filtros se aplican a los registros históricos y una persona cuenta si al menos un registro cumple todos los filtros a la vez;
+    después se muestra su fila de persona única. Así el número coincide con «Personas únicas» del Inicio.
+    """
+    if maestras.empty:
+        return maestras
+    if any(elegidos.get(c) for c, _, _ in FILTROS["personas"]):
+        ids = set(aplicar(historicos, "personas", elegidos)["id_persona_maestro"])
+        maestras = maestras[maestras["id_persona_maestro"].isin(ids)]
+    return aplicar(maestras, "personas", {}, texto)
