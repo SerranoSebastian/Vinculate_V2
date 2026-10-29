@@ -6,9 +6,9 @@ son re-ejecutables sin duplicar nada · tienen un `_rollback.sql` · están prob
 (`tests/test_sql_migraciones.py`, 80 pruebas).
 
 **Cómo se ejecutan:** a mano, en *Supabase → SQL Editor*, **primero en un proyecto de prueba**. La app solo *lee* qué migraciones
-están aplicadas (*Administración → Estado del sistema*) y funciona, con menos funciones, si falta alguna de las opcionales (V004, V005, V007, V008, V011).
+están aplicadas (*Administración → Estado del sistema*) y funciona, con menos funciones, si falta alguna de las opcionales (V004, V005, V007, V008, V011, V012).
 
-Orden de aplicación: **V001 → V002 → V003 → V004 → V005 → V007 → V008 → V009 → V010 → V011**. Orden de reversión: el inverso.
+Orden de aplicación: **V001 → V002 → V003 → V004 → V005 → V007 → V008 → V009 → V010 → V011 → V012**. Orden de reversión: el inverso.
 Dependencias: V003 y V008 requieren V002 (la migración se detiene con un mensaje claro si falta).
 
 ---
@@ -103,6 +103,14 @@ Agrega 8 columnas nuevas y opcionales a `catalogo_instituciones`: `tipo` (Univer
 **Verificar:** `select count(*) from information_schema.columns where table_schema='public' and table_name='catalogo_instituciones' and column_name in ('tipo','municipio','direccion','codigo_postal','latitud','longitud','ubicacion_fuente','ubicacion_actualizada');` → `8` (también aparece como «Aplicada» en *Administración → Estado del sistema*).
 **Revertir:** `V011_rollback.sql` (se pierde lo capturado después; el archivo trae la consulta de respaldo).
 
+## V012 — Unificar el año «estimado» con el «registrado»  *(opcional; corrige datos)*
+`personas.anio_fuente` distingue `registrado` de `imputado` (años estimados en la limpieza de septiembre de 2026, V005). V012 pasa todos los `imputado` a `registrado`
+para que los reportes cuenten simplemente «vinculaciones». **No cambia el año (`personas.anio`), ni `institucion_fuente`, ni ninguna otra columna, ni borra filas.**
+Respaldo en `respaldo_v012_anio_fuente` (solo administradores), re-ejecutable, una sola fila de auditoría. Requiere V005.
+La app **ya muestra los años unificados** (sin barras rayadas, sin «(estimado)» y sin el filtro de años estimados) aunque no la ejecutes.
+**Antes:** `select anio_fuente, count(*) from public.personas group by 1;` (esperado `imputado = 534`). **Después:** `select count(*) from public.personas where anio_fuente='imputado';` → `0`.
+**Revertir:** `V012_rollback.sql` (solo restaura la etiqueta de quien conserve el mismo año).
+
 ## Si necesitas deshacer todo
-Ejecuta los `_rollback.sql` en este orden: **V011 → V010 → V009 → V008 → V007 → V005 → V004 → V003 → V002 → V001**. Antes, respalda lo que se capturó después de aplicarlas
+Ejecuta los `_rollback.sql` en este orden: **V012 → V011 → V010 → V009 → V008 → V007 → V005 → V004 → V003 → V002 → V001**. Antes, respalda lo que se capturó después de aplicarlas
 (los archivos indican cómo). V001_rollback reabre las brechas de seguridad: solo como emergencia.

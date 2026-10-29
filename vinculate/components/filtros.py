@@ -21,7 +21,6 @@ class FiltrosInicio:
     sexos: list[str] = field(default_factory=list)
     oportunidad: list[str] = field(default_factory=list)
     estados: list[str] = field(default_factory=list)
-    solo_registrados: bool = False
 
     def etiquetas(self) -> list[str]:
         out = []
@@ -37,8 +36,6 @@ class FiltrosInicio:
             out.append("Oportunidad: " + ", ".join(self.oportunidad))
         if self.estados:
             out.append("Estado de vacante: " + ", ".join(self.estados))
-        if self.solo_registrados:
-            out.append("Solo años registrados")
         return out
 
 
@@ -51,7 +48,7 @@ def _limpiar() -> None:
         st.session_state.pop(k, None)
 
 
-def barra(personas: pd.DataFrame | None, vacantes: pd.DataFrame | None, hay_anio_estimado: bool) -> FiltrosInicio:
+def barra(personas: pd.DataFrame | None, vacantes: pd.DataFrame | None) -> FiltrosInicio:
     """Dibuja los filtros y devuelve su estado. Cualquiera de los dos DataFrames puede ser None (sin permiso)."""
     anios: set[int] = set()
     if personas is not None and not personas.empty:
@@ -74,8 +71,6 @@ def barra(personas: pd.DataFrame | None, vacantes: pd.DataFrame | None, hay_anio
         if vacantes is not None:
             f.oportunidad = c5.multiselect("Tipo de oportunidad", TIPOS_OPORTUNIDAD, key="fi_oportunidad", placeholder="Todas")
             f.estados = c6.multiselect("Estado de la vacante", ESTADOS_VACANTE, key="fi_estados", placeholder="Todos")
-        if hay_anio_estimado:
-            f.solo_registrados = st.toggle("Excluir registros con año estimado (usar solo años registrados)", key="fi_solo_registrados")
         st.button("Limpiar filtros", on_click=_limpiar, key="fi_limpiar")
     if f.etiquetas():
         st.caption("Filtros activos → " + " · ".join(f.etiquetas()))
@@ -93,8 +88,6 @@ def aplicar_personas(df: pd.DataFrame, f: FiltrosInicio) -> pd.DataFrame:
         df = df[homologar_nulos(df["vinculacion"]).isin(f.tipos)]
     if f.sexos:
         df = df[homologar_nulos(df["sexo"]).isin(f.sexos)]
-    if f.solo_registrados and "anio_fuente" in df.columns:
-        df = df[df["anio_fuente"].ne("imputado")]
     return df
 
 

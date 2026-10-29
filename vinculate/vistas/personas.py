@@ -173,8 +173,6 @@ def _seccion_analisis(s: Sesion) -> None:
             ui.tabla(paneles.tabla_anual(pf))
             sin = int(pf["año"].isna().sum())
             ui.nota(f"Además hay {sin:,} vinculación(es) sin año; se conservan y no se asignan a ningún periodo.")
-            if "anio_fuente" in pf.columns and (pf["anio_fuente"] == "imputado").any():
-                ui.nota("Las barras rayadas son años estimados en una limpieza histórica; no fueron capturados originalmente.")
     elif vista == "Recurrencia":
         res = resumen_vinculaciones_por_persona(pf)
         rec = res[res["total_vinculaciones"] > 1]

@@ -103,8 +103,7 @@ def render() -> None:
                 "Usa el menú lateral para entrar a las secciones disponibles.")
         return
 
-    hay_estimado = p is not None and "anio_fuente" in p.columns and bool((p["anio_fuente"] == "imputado").any())
-    f = filtros.barra(p, v, hay_estimado)
+    f = filtros.barra(p, v)
     n_sel = st.session_state.get("_sel_n", 0)
     selecciones: dict[str, tuple[str, str]] = {}
 

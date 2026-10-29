@@ -23,7 +23,7 @@ def tabla_anual(pf: pd.DataFrame) -> pd.DataFrame:
 
 
 def evolucion_anual(pf: pd.DataFrame, clave: str) -> bool:
-    """Barras de vinculaciones por año (distinguiendo años estimados) + línea de personas únicas. False si no hay datos."""
+    """Barras de vinculaciones por año + línea de personas únicas. False si no hay datos."""
     con = pf[pf["año"].notna()]
     if con.empty:
         from . import ui
@@ -32,17 +32,7 @@ def evolucion_anual(pf: pd.DataFrame, clave: str) -> bool:
     anual = con.groupby("año").agg(vinculaciones=("id_persona", "count"), personas=("id_persona_maestro", "nunique")).reset_index()
     anual["año"] = anual["año"].astype(int)
     fig = go.Figure()
-    if "anio_fuente" in con.columns:
-        est = con.assign(est=con["anio_fuente"].eq("imputado")).groupby(["año", "est"]).size().unstack(fill_value=0)
-        est.index = est.index.astype(int)
-        reg = est.get(False, pd.Series(0, index=est.index)).reindex(anual["año"]).fillna(0)
-        imp = est.get(True, pd.Series(0, index=est.index)).reindex(anual["año"]).fillna(0)
-        fig.add_bar(x=anual["año"], y=reg, name="Vinculaciones (año registrado)", marker_color=PALETA_SEDECO[0])
-        fig.add_bar(x=anual["año"], y=imp, name="Vinculaciones (año estimado)", marker_color=PALETA_SEDECO[1],
-                    marker_pattern_shape="/")
-        fig.update_layout(barmode="stack")
-    else:
-        fig.add_bar(x=anual["año"], y=anual["vinculaciones"], name="Vinculaciones", marker_color=PALETA_SEDECO[0])
+    fig.add_bar(x=anual["año"], y=anual["vinculaciones"], name="Vinculaciones", marker_color=PALETA_SEDECO[0])
     fig.add_scatter(x=anual["año"], y=anual["personas"], name="Personas únicas", mode="lines+markers",
                     line={"color": PALETA_SEDECO[4], "width": 3})
     fig.update_layout(title="Evolución anual: vinculaciones y personas únicas", xaxis={"type": "category"},

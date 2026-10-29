@@ -944,3 +944,59 @@ class TestV011:
                               "and column_name in ('nombre','activo')") == 2
         finally:
             _drop_db(db)
+
+
+# ---------------------------------------------------------------------------
+# V012 — unificar año estimado y registrado
+# ---------------------------------------------------------------------------
+class TestV012:
+    def _db(self, nombre, extra):
+        db = _build(nombre, MIGS_1A3 + ["V005_origen_del_dato.sql"])
+        with _connect(db) as conn:
+            conn.execute("update public.personas set anio_fuente='imputado' where id_persona in ('I-00001-00001','P-00001-00002')")
+        self.auditoria_previa = scalar(db, "select count(*) from public.app_audit_log where action='srv_update'")
+        for f in extra:
+            _run_file(db, MIG / f)
+        return db
+
+    def test_unifica_respalda_y_no_toca_el_resto(self):
+        db = self._db("v12", ["V012_unificar_anio_registrado.sql"])
+        try:
+            q = lambda sql: scalar(db, sql)
+            assert q("select count(*) from public.personas where anio_fuente='imputado'") == 0
+            assert q("select count(*) from public.respaldo_v012_anio_fuente") == 2
+            assert q("select count(*) from public.personas where institucion_fuente='balanceado'") == q("select count(*) from public.personas where institucion_fuente='balanceado'")
+            assert q("select count(*) from public.app_audit_log where action='migration_V012'") == 1
+            assert q("select count(*) from public.app_audit_log where action='srv_update'") == self.auditoria_previa
+            _run_file(db, MIG / "V012_unificar_anio_registrado.sql")      # idempotente
+            assert q("select count(*) from public.respaldo_v012_anio_fuente") == 2
+        finally:
+            _drop_db(db)
+
+    def test_rollback_restaura_solo_si_el_anio_no_cambio(self):
+        db = self._db("v12rb0", ["V012_unificar_anio_registrado.sql"])
+        try:
+            with _connect(db) as conn:     # una persona corrige su año después: su etiqueta no debe volver a «imputado»
+                conn.execute("update public.personas set anio = anio + 1 where id_persona='P-00001-00002'")
+            _run_file(db, MIG / "V012_rollback.sql")
+            assert scalar(db, "select anio_fuente from public.personas where id_persona='I-00001-00001'") == "imputado"
+            assert scalar(db, "select anio_fuente from public.personas where id_persona='P-00001-00002'") == "registrado"
+        finally:
+            _drop_db(db)
+
+    def test_exige_v005(self):
+        db = _build("v12sin5", MIGS_1A3)
+        try:
+            with pytest.raises(psycopg.Error):
+                _run_file(db, MIG / "V012_unificar_anio_registrado.sql")
+        finally:
+            _drop_db(db)
+
+    def test_respaldo_solo_para_administradores(self):
+        db = self._db("v12rls", ["V012_unificar_anio_registrado.sql"])
+        try:
+            with as_user(db, LECTOR) as cur:
+                cur.execute("select count(*) from public.respaldo_v012_anio_fuente")
+                assert cur.fetchone()[0] == 0
+        finally:
+            _drop_db(db)

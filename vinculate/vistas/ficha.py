@@ -32,7 +32,7 @@ def _faltantes(fila) -> list[str]:
 
 def _anio_txt(r) -> str:
     anio = visible(r.get("Año"))
-    return anio + " (estimado)" if r.get("anio_fuente") == "imputado" and anio != SIN_DATO else anio
+    return anio
 
 
 def _inst_txt(r) -> str:
@@ -70,8 +70,6 @@ def contenido(sesion: Sesion, id_maestro: str) -> None:
         chips += ui.chip(f"Recurrente · {len(hist)} vinculaciones")
     if faltan:
         chips += ui.chip(f"{len(faltan)} dato(s) incompleto(s)", "est")
-    if (hist.get("anio_fuente", pd.Series(dtype=str)) == "imputado").any():
-        chips += ui.chip("Incluye año estimado", "est")
     st.markdown(chips, unsafe_allow_html=True)
 
     fechas = hist["fecha_registro"].dropna()

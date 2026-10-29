@@ -88,10 +88,7 @@ Las barras indican cuántas vinculaciones hubo en cada año. Se suma una por cad
 
 La línea indica cuántas personas distintas fueron vinculadas ese año. Cada persona se cuenta una sola vez dentro del año.
 
-Si la línea sube de un año a otro, significa que el programa llegó a más personas.
-
-Barra roja: vinculaciones cuyo año viene registrado en el dato original.
-Barra rayada: vinculaciones cuyo año fue estimado al organizar la información histórica. Se muestran con otro patrón para distinguirlas de las registradas.""",
+Si la línea sube de un año a otro, significa que el programa llegó a más personas.""",
 
     "inicio.grafica_tipo_vinculacion": """Muestra qué parte del total de vinculaciones corresponde a cada tipo. El porcentaje de cada sección se calcula dividiendo las vinculaciones de ese tipo entre el total.
 
@@ -363,10 +360,7 @@ Las barras indican cuántas vinculaciones hubo en cada año. Se suma una por cad
 
 La línea indica cuántas personas distintas fueron vinculadas ese año. Cada persona se cuenta una sola vez dentro del año.
 
-Si la línea sube de un año a otro, significa que el programa llegó a más personas.
-
-Barra roja: vinculaciones cuyo año viene registrado en el dato original.
-Barra rayada: vinculaciones cuyo año fue estimado al organizar la información histórica. Se muestran con otro patrón para distinguirlas de las registradas.""",
+Si la línea sube de un año a otro, significa que el programa llegó a más personas.""",
 
     "personas.tabla_anual": """Resume cada año con los mismos datos de la gráfica.
 

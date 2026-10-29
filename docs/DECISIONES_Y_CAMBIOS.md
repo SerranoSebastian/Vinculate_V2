@@ -114,3 +114,8 @@
 - **Empresas sin vacantes:** el directorio (tabla de Empresas, editor de coordenadas y Mapa) ahora suma las empresas con vacantes, las del catálogo, la lista fija de la app y las que ya tienen seguimientos de vinculación. Antes solo salían las que tenían vacantes o fila en el catálogo, por eso faltaban. Nada se estima: sin coordenadas no se dibujan y se listan aparte.
 - El editor de coordenadas ganó búsqueda por nombre y el interruptor «Solo sin coordenadas».
 - Las empresas dadas de alta aparecen en los formularios de Nueva vacante, Editar vacante y Vinculaciones (`empresas.opciones`).
+
+## Años de vinculaciones unificados (2026-10-29)
+
+- **App:** ya no distingue año «registrado» y «estimado»: la gráfica de evolución anual tiene una sola serie «Vinculaciones», se quitó el filtro «Excluir registros con año estimado», el sufijo «(estimado)» y la etiqueta «Incluye año estimado» de la ficha, y la nota de barras rayadas. Funciona con o sin la migración.
+- **Base (V012, opcional, con respaldo y reversión):** `anio_fuente` de `imputado` a `registrado`. El año en sí no se toca. La procedencia queda en `respaldo_v012_anio_fuente`. `institucion_fuente` (balanceo) queda igual.
