@@ -1,4 +1,4 @@
-"""Explorador general: cualquier tabla a la que el usuario tenga acceso, con búsqueda de texto y exportación."""
+"""Explorador general: cualquier tabla a la que el usuario tenga acceso, con filtros por columna, búsqueda por nombre/ID y exportación."""
 from __future__ import annotations
 
 import pandas as pd
@@ -6,7 +6,7 @@ import streamlit as st
 
 from ..auth.sesion import actual
 from ..components import ui
-from ..core.texto import normalizar_texto
+from ..core import explorador as filtros_exp
 from ..services import datos
 from . import ficha
 
@@ -39,15 +39,27 @@ def _base(sesion, clave: str) -> pd.DataFrame:
     return datos.vinculaciones(sesion)
 
 
-def _buscar(df: pd.DataFrame, texto: str) -> pd.DataFrame:
-    terminos = [t for t in normalizar_texto(texto).split(" ") if t]
-    if not terminos or df.empty:
-        return df
-    pajar = df.astype(str).apply(lambda s: s.map(normalizar_texto)).agg(" ".join, axis=1)
-    mask = pd.Series(True, index=df.index)
-    for t in terminos:
-        mask &= pajar.str.contains(t, regex=False)
-    return df[mask]
+def _limpiar(clave: str) -> None:
+    for col, _, _ in filtros_exp.FILTROS[clave]:
+        st.session_state.pop(f"exp_f_{clave}_{col}", None)
+    st.session_state.pop(f"exp_texto_{clave}", None)
+
+
+def _filtros(clave: str, df: pd.DataFrame) -> tuple[dict[str, list[str]], str]:
+    """Dibuja el buscador de nombre/ID y los filtros por columna de la base elegida."""
+    texto = st.text_input("Buscar", key=f"exp_texto_{clave}", placeholder=filtros_exp.AYUDA_TEXTO[clave] + " (todas las palabras deben aparecer)")
+    elegidos: dict[str, list[str]] = {}
+    with st.expander("🎛️ Filtros", expanded=True):
+        defs = [d for d in filtros_exp.FILTROS[clave] if d[0] in df.columns]
+        for i in range(0, len(defs), 3):
+            cols = st.columns(3)
+            for caja, (col, etiqueta, multi) in zip(cols, defs[i:i + 3]):
+                elegidos[col] = caja.multiselect(etiqueta, filtros_exp.opciones(df, col, multi), key=f"exp_f_{clave}_{col}", placeholder="Todos")
+        st.button("Limpiar filtros", on_click=_limpiar, args=(clave,), key=f"exp_limpiar_{clave}")
+    activos = [f"{etq}: {', '.join(elegidos[c])}" for c, etq, _ in filtros_exp.FILTROS[clave] if elegidos.get(c)]
+    if activos:
+        st.caption("Filtros activos → " + " · ".join(activos))
+    return elegidos, texto
 
 
 @ui.protegido
@@ -62,25 +74,26 @@ def render() -> None:
                                  default=next(iter(disponibles)), key="explorador_base", label_visibility="collapsed")
     if clave is None:
         clave = next(iter(disponibles))
-    texto = st.text_input("Buscar", key="explorador_texto", placeholder="Nombre, ID, empresa, municipio, carrera… (todas las palabras deben aparecer)")
     df = _base(sesion, clave)
     total = len(df)
-    df = _buscar(df, texto).reset_index(drop=True)
+    elegidos, texto = _filtros(clave, df)
+    df = filtros_exp.aplicar(df, clave, elegidos, texto).reset_index(drop=True)
+    hay_filtro = bool(texto.strip()) or any(elegidos.values())
 
     c1, c2 = st.columns(2)
     ui.kpi("Registros en la base", total, contenedor=c1)
-    ui.kpi("Registros que coinciden", len(df), "con la búsqueda actual" if texto.strip() else "sin búsqueda activa", contenedor=c2)
+    ui.kpi("Registros que coinciden", len(df), "con la búsqueda y los filtros actuales" if hay_filtro else "sin filtros activos", contenedor=c2)
     ui.explicacion(f"Base «{disponibles[clave][0]}» tal como la ve tu usuario (las reglas de seguridad de Supabase ya filtraron lo que no puedes ver).",
-                   "Cuenta las filas que cumplen la búsqueda de texto.",
+                   "Cuenta las filas que cumplen los filtros elegidos (cada filtro revisa solo su propia columna) y la búsqueda por nombre o ID.",
                    "En «Personas» cada fila es una persona única; en «Registros históricos» cada fila es una vinculación histórica, "
                    "por lo que una persona puede aparecer varias veces.")
     if df.empty:
-        ui.vacio("No hay registros que coincidan con la búsqueda.")
+        ui.vacio("No hay registros con esos filtros. Quita alguno o pulsa «Limpiar filtros».")
         return
     cols = [c for c in COLS_VISTA[clave] if c in df.columns]
     vista = df.head(MAX_FILAS)
     if len(df) > MAX_FILAS:
-        ui.nota(f"Se muestran las primeras {MAX_FILAS:,} filas de {len(df):,}. Afina la búsqueda o exporta para ver todas.")
+        ui.nota(f"Se muestran las primeras {MAX_FILAS:,} filas de {len(df):,}. Afina los filtros o exporta para ver todas.")
     idx = ui.tabla(vista, cols, altura=520, key=f"explorador_tabla_{clave}", seleccionable=clave in ("personas", "historicos")
                    and sesion.puede("personas", "view"), fechas=("fecha_registro", "Fecha", "fecha_cierre", "fecha_vinculacion", "fecha_colocacion"))
     if idx is not None and "id_persona_maestro" in vista.columns:

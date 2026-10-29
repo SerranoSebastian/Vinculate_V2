@@ -119,3 +119,10 @@
 
 - **App:** ya no distingue año «registrado» y «estimado»: la gráfica de evolución anual tiene una sola serie «Vinculaciones», se quitó el filtro «Excluir registros con año estimado», el sufijo «(estimado)» y la etiqueta «Incluye año estimado» de la ficha, y la nota de barras rayadas. Funciona con o sin la migración.
 - **Base (V012, opcional, con respaldo y reversión):** `anio_fuente` de `imputado` a `registrado`. El año en sí no se toca. La procedencia queda en `respaldo_v012_anio_fuente`. `institucion_fuente` (balanceo) queda igual.
+
+## Explorador con filtros por columna y menú sin «Búsqueda»
+
+- **Explorador:** cada base (Personas, Registros históricos, Vacantes, Seguimientos) tiene ahora filtros por columna, como en el Inicio ejecutivo (municipio, sexo, escolaridad, carrera, institución, año, estatus, etc.). Cada filtro revisa solo su columna, así que filtrar «HUAMANTLA» ya no trae filas que lo mencionan en otra columna. Varias opciones de un mismo filtro se combinan con «o»; filtros distintos, con «y». Lógica en `vinculate/core/explorador.py` (pura, con pruebas).
+- La búsqueda de texto del Explorador ahora mira solo nombres e identificadores (nombre, ID, teléfono, correo / empresa, puesto), no todo el renglón.
+- **Menú:** «Búsqueda» ya no aparece en Consulta. La página de resultados sigue existiendo (oculta) porque el buscador global del lateral la usa; si la versión de Streamlit no soporta páginas ocultas, aparece en el menú sin otro efecto.
+- Sin migraciones ni cambios en datos, permisos o RLS.

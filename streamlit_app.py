@@ -67,8 +67,11 @@ def _login() -> None:
 
 # ------------------------------------------------------------------ navegación
 def _paginas(s: Sesion) -> dict[str, st.Page]:
-    def pagina(clave, funcion, titulo, icono):
-        return clave, st.Page(funcion, title=titulo, icon=icono, url_path=clave)
+    def pagina(clave, funcion, titulo, icono, oculta=False):
+        try:
+            return clave, st.Page(funcion, title=titulo, icon=icono, url_path=clave, visibility="hidden" if oculta else "visible")
+        except TypeError:  # versión de Streamlit sin «visibility»: la página queda visible, pero todo funciona igual
+            return clave, st.Page(funcion, title=titulo, icon=icono, url_path=clave)
 
     def alguna(modulo):
         return s.puede_alguna(modulo, ("view", "create", "edit", "delete"))
@@ -86,7 +89,8 @@ def _paginas(s: Sesion) -> dict[str, st.Page]:
     if s.puede("explorador", "view"):
         catalogo.append(("Consulta", "explorador", pagina("explorador", explorador.render, "Explorador", "🔎")))
     if any(s.puede(m, "view") for m in ("personas", "vacantes", "vinculaciones")):
-        catalogo.append(("Consulta", "busqueda", pagina("busqueda", busqueda.render, "Búsqueda", "🔍")))
+        # La página de resultados existe (la usa el buscador del lateral) pero no aparece como opción del menú.
+        catalogo.append(("Consulta", "busqueda", pagina("busqueda", busqueda.render, "Búsqueda", "🔍", oculta=True)))
     if administracion.hay_algo_que_administrar(s):
         catalogo.append(("Sistema", "administracion", pagina("administracion", administracion.render, "Administración", "⚙️")))
     catalogo.append(("Sistema", "cuenta", pagina("cuenta", administracion.render_cuenta, "Mi cuenta", "👤")))
