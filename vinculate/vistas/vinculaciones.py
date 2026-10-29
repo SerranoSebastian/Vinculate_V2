@@ -9,11 +9,11 @@ import streamlit as st
 from .. import navegacion
 from ..auth.sesion import Sesion, actual
 from ..components import charts, ui
-from ..core.catalogos_vacantes import AREAS_OPORTUNIDAD, EMPRESAS_CATALOGO, EMPRESAS_SECTOR, PUESTOS_CATALOGO
+from ..core.catalogos_vacantes import AREAS_OPORTUNIDAD, PUESTOS_CATALOGO
 from ..core.constantes import ESTATUS_NUEVO, ESTATUS_VINCULACION, SIN_DATO
 from ..core.texto import normalizar_texto, texto_vacio
 from ..core.vacantes import vigentes_mask
-from ..services import datos, guardado
+from ..services import datos, empresas, guardado
 from . import ficha
 
 SECCIONES = {
@@ -76,6 +76,7 @@ def _seccion_nuevo(s: Sesion, preseleccion: str | None) -> None:
     hist = personas_df[personas_df["id_persona_maestro"].eq(mid)]
     ui.ayuda_grafica("vinculaciones.nuevo_formulario", fila_propia=True)
     ui.bloque_deshacer(s, "vinculaciones")
+    nombres_emp, sector_emp = empresas.opciones(s)
     with st.form("form_seg_nuevo"):
         origen = st.selectbox("Vinculación histórica de origen (opcional)", [""] + hist["id_persona"].tolist(),
                               format_func=lambda x: "Sin asociación específica" if x == "" else f"{x} — {hist.loc[hist['id_persona'].eq(x), 'vinculacion'].iloc[0]}")
@@ -84,17 +85,17 @@ def _seccion_nuevo(s: Sesion, preseleccion: str | None) -> None:
                               format_func=lambda k: f"{vigentes.loc[k, 'Empresa']} — {vigentes.loc[k, 'Tipo de Vacante']}")
             fv = vigentes.loc[vi]
             empresa, puesto = str(fv["Empresa"]), str(fv["Tipo de Vacante"])
-            sector = str(fv.get("Sector Empresa") or "") or EMPRESAS_SECTOR.get(empresa, "")
+            sector = str(fv.get("Sector Empresa") or "") or sector_emp.get(empresa, "")
             area = str(fv.get("Área de Oportunidad") or "") or "Otro / Sin dato"
             st.caption(f"🏢 {empresa} · {sector or SIN_DATO} · {puesto} · {area}")
         else:
             if modo.endswith("vigente"):
                 st.info("No hay vacantes vigentes (o tu perfil no puede consultarlas); usa los catálogos.")
             c1, c2 = st.columns(2)
-            empresa = c1.selectbox("Empresa", EMPRESAS_CATALOGO)
+            empresa = c1.selectbox("Empresa", nombres_emp)
             puesto = c1.selectbox("Puesto", PUESTOS_CATALOGO)
             area = c2.selectbox("Área de oportunidad", AREAS_OPORTUNIDAD)
-            sector = EMPRESAS_SECTOR.get(empresa, "")
+            sector = sector_emp.get(empresa, "")
             c2.caption("El sector se asigna según la empresa elegida.")
         c1, c2 = st.columns(2)
         estatus = c1.selectbox("Estatus", ESTATUS_NUEVO)
@@ -143,7 +144,8 @@ def _seccion_editar(s: Sesion) -> None:
     sid = str(f["id_vinculacion"])
     st.markdown(f"#### Seguimiento {sid}")
     if s.puede("vinculaciones", "edit"):
-        empresas_ops = _opciones_con_legacy(EMPRESAS_CATALOGO, f["empresa"])
+        nombres_emp, sector_emp = empresas.opciones(s)
+        empresas_ops = _opciones_con_legacy(nombres_emp, f["empresa"])
         puestos_ops = _opciones_con_legacy(PUESTOS_CATALOGO, f["tipo_vacante"])
         areas_ops = _opciones_con_legacy(AREAS_OPORTUNIDAD, f.get("area_oportunidad", ""), especiales=("Otro / Sin dato",))
         with st.form(f"form_seg_edit_{sid}"):
@@ -163,7 +165,7 @@ def _seccion_editar(s: Sesion) -> None:
                 resp = st.text_input("Responsable", value=str(f["responsable"]))
             guardar = st.form_submit_button("💾 Guardar cambios", width="stretch")
         if guardar:
-            nuevos = {"empresa": empresa, "sector_empresa": EMPRESAS_SECTOR.get(empresa, f.get("sector_empresa", "")),
+            nuevos = {"empresa": empresa, "sector_empresa": sector_emp.get(empresa, f.get("sector_empresa", "")),
                       "tipo_vacante": puesto, "area_oportunidad": area, "estatus": estatus, "fecha_vinculacion": vinc,
                       "fecha_colocacion": coloc if estatus == "Colocado" else None, "observaciones": obs, "responsable": resp}
             r = guardado.editar(s, "vinculaciones", sid, nuevos)

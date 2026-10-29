@@ -107,3 +107,10 @@
 - **Qué se lista:** solo instituciones que ya tienen al menos una persona asociada (la columna `Institución` de personas); «Personas» cuenta personas distintas y se informa cuántas fueron asignadas por balanceo. La fila del catálogo se crea al guardar si no existía.
 - **Mapa:** casilla «Instituciones educativas» (apagada de inicio), filtro por tipo y por institución, «Acercar a», color propio por institución (paleta distinta a empresas) y contorno oscuro; clic abre el detalle con sus personas. Sin coordenadas no se dibuja y se lista aparte; nada se estima.
 - Sin V011 la app sigue funcionando: la casilla avisa y *Estado del sistema* muestra V011 como pendiente.
+
+## Empresas nuevas y empresas sin vacantes en el mapa (2026-10-29)
+
+- **Alta de empresas:** Vacantes → Empresas → «Agregar una empresa nueva» (permiso `vacantes.create`, igual que la RLS del catálogo). Solo el nombre es obligatorio; sector, municipio, dirección, C.P. y coordenadas son opcionales. No permite duplicados (sin importar mayúsculas ni acentos), se audita (`empresa_creada`) y no requiere migración (usa las columnas de V004 solo si se captura ubicación).
+- **Empresas sin vacantes:** el directorio (tabla de Empresas, editor de coordenadas y Mapa) ahora suma las empresas con vacantes, las del catálogo, la lista fija de la app y las que ya tienen seguimientos de vinculación. Antes solo salían las que tenían vacantes o fila en el catálogo, por eso faltaban. Nada se estima: sin coordenadas no se dibujan y se listan aparte.
+- El editor de coordenadas ganó búsqueda por nombre y el interruptor «Solo sin coordenadas».
+- Las empresas dadas de alta aparecen en los formularios de Nueva vacante, Editar vacante y Vinculaciones (`empresas.opciones`).

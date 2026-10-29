@@ -188,3 +188,68 @@ def test_administracion_instituciones_muestra_indicadores_y_editor(tmp_path, mon
     etiquetas = [m.label for m in at.metric] if at.metric else []
     texto = " ".join(m.value for m in at.markdown)
     assert "Instituciones con personas" in texto and "Tipo y ubicación exacta" in texto
+
+
+# ------------------------------------------------------------------ empresas sin vacantes y alta de empresas
+def _sesion_emp(catalogo=None, **mods):
+    c = cliente_demo(catalogo_empresas=catalogo if catalogo is not None else [{"nombre": "Greenbrier", "sector": "Manufactura", "activo": True,
+                                                                              "municipio": "APIZACO", "latitud": 19.41, "longitud": -98.14}])
+    return sesion_demo(c, **mods)
+
+
+def test_directorio_incluye_empresas_conocidas_sin_vacantes_y_las_ubica_si_tienen_coordenadas():
+    from vinculate.services import empresas
+    s = _sesion_emp([{"nombre": "Greenbrier", "sector": "Manufactura", "activo": True, "municipio": "APIZACO", "latitud": 19.41, "longitud": -98.14},
+                     {"nombre": "Dow", "sector": "Industria Química", "activo": True, "municipio": "TLAXCALA", "latitud": 19.32, "longitud": -98.23}])
+    vinc = pd.DataFrame({"empresa": ["Empresa Solo Seguimiento", "Sin asignar"], "sector_empresa": ["Textil", ""]})
+    adic = empresas.adicionales(vinc)
+    assert "Dow" in adic and "Empresa Solo Seguimiento" in adic and "Sin asignar" not in adic     # lista fija + seguimientos
+    d = empresas.directorio(datos.vacantes(s), empresas.catalogo(s), adic)
+    assert d["Empresa"].is_unique
+    dow = d[d["Empresa"] == "Dow"].iloc[0]
+    assert dow["Vacantes"] == 0 and (dow["Latitud"], dow["Longitud"]) == (19.32, -98.23)          # sin vacantes, pero con su ubicación
+    assert d[d["Empresa"] == "Empresa Solo Seguimiento"].iloc[0]["Sector"] == "Textil"
+    ok, sin, _ = puntos.puntos_validos(d)
+    assert "Dow" in set(ok["Empresa"]) and "Empresa Solo Seguimiento" in set(sin["Empresa"])
+    # sin la lista adicional, sigue funcionando como antes
+    assert len(empresas.directorio(datos.vacantes(s), empresas.catalogo(s))) <= len(d)
+
+
+def test_crear_empresa_valida_duplicados_y_permiso():
+    from vinculate.repositories.errores import SinPermiso
+    from vinculate.services import empresas
+    s = _sesion_emp()
+    conocidas = ["Greenbrier", "Dow"]
+    empresas.crear(s, "  Textiles   Nuevos SA ", "Textil", "APIZACO", "Calle 1", "90300", 19.4, -98.1, conocidas=conocidas)
+    fila = [c for c in s.cliente.tablas["catalogo_empresas"] if c["nombre"] == "Textiles Nuevos SA"][0]
+    assert (fila["sector"], fila["municipio"], fila["latitud"], fila["ubicacion_fuente"], fila["activo"]) == ("Textil", "APIZACO", 19.4, "manual", True)
+    empresas.crear(s, "Solo Nombre", conocidas=conocidas)                                           # sin ubicación: solo nombre y sector
+    f2 = [c for c in s.cliente.tablas["catalogo_empresas"] if c["nombre"] == "Solo Nombre"][0]
+    assert "latitud" not in f2 and f2["sector"] is None
+    casos = [dict(nombre=""), dict(nombre="dów"), dict(nombre="GREENBRIER"), dict(nombre="Otra", municipio="Marte"),
+             dict(nombre="Otra", codigo_postal="12"), dict(nombre="Otra", latitud=-98.2, longitud=19.4), dict(nombre="Otra", latitud=19.4)]
+    for caso in casos:
+        with pytest.raises(ValueError):
+            empresas.crear(s, conocidas=conocidas, **caso)
+    sin_permiso = _sesion_emp(admin=False, vacantes=("view", "edit"))
+    with pytest.raises(SinPermiso):
+        empresas.crear(sin_permiso, "Otra Empresa")
+    s_ok = _sesion_emp(admin=False, vacantes=("view", "create"))
+    empresas.crear(s_ok, "Otra Empresa")                                                            # vacantes.create basta (como la RLS)
+
+
+def test_opciones_incluye_empresas_dadas_de_alta():
+    from vinculate.services import empresas
+    s = _sesion_emp([{"nombre": "Empresa Nueva Mia", "sector": "Textil", "activo": True}, {"nombre": "Inactiva SA", "sector": "X", "activo": False}])
+    nombres, sector = empresas.opciones(s)
+    assert "Empresa Nueva Mia" in nombres and sector["Empresa Nueva Mia"] == "Textil" and "Inactiva SA" not in nombres
+    assert "Dow" in nombres                                                                           # la lista fija sigue ahí
+
+
+@pytest.mark.apptest
+def test_pagina_empresas_tiene_alta_y_muestra_empresas_sin_vacantes(tmp_path, monkeypatch):
+    at = _pagina(tmp_path, monkeypatch, "vacantes", _sesion_emp()).run()
+    at.session_state["vacantes_apartado"] = "🏢 Empresas"
+    at.run()
+    assert not at.exception and not at.error, [e.value for e in at.exception]
+    assert any("Agregar una empresa nueva" in e.label for e in at.expander)

@@ -518,7 +518,7 @@ Cierre: fecha en que la vacante termina, si se registró.
 Se ordena de la más reciente a la más antigua.""",
 
     # ------------------------------------------------------------------ VACANTES · Empresas
-    "vacantes.emp_total": """Es el número de empresas distintas que tienen al menos una vacante registrada.""",
+    "vacantes.emp_total": """Es el número de empresas distintas registradas en el sistema: las que tienen vacantes, las que ya tienen seguimientos con personas y las que se dieron de alta aunque no tengan vacantes. Debajo se indica cuántas de ellas tienen al menos una vacante.""",
 
     "vacantes.emp_con_municipio": """Es el número de empresas de la tabla que ya tienen un municipio registrado. El municipio se captura a mano en este mismo apartado.""",
 
@@ -526,21 +526,27 @@ Se ordena de la más reciente a la más antigua.""",
 
     "vacantes.emp_sectores": """Es el número de sectores económicos distintos a los que pertenecen las empresas de la tabla (por ejemplo, textil o comercio).""",
 
-    "vacantes.tabla_empresas": """Tiene una fila por empresa con vacantes registradas.
+    "vacantes.tabla_empresas": """Tiene una fila por empresa registrada, tenga o no vacantes.
 
-Vacantes: total de vacantes de la empresa.
+Vacantes: total de vacantes de la empresa (0 si no ha ofrecido ninguna).
 Vigentes: vacantes que siguen abiertas.
 Puestos distintos: tipos de puesto diferentes que ha ofrecido.
 Municipio: municipio donde se ubica, si se capturó.
 Fuente de ubicación: de dónde viene el dato del municipio.""",
 
+    "vacantes.emp_nueva": """Sirve para dar de alta una empresa que todavía no está en la lista. Solo el nombre es obligatorio; el sector, el municipio, la dirección y las coordenadas son opcionales y se pueden completar después.
+
+Si se capturan coordenadas, la empresa aparece enseguida en el Mapa territorial aunque no tenga vacantes. Después de guardarla también se puede elegir al registrar una vacante o un seguimiento.
+
+No se permite repetir una empresa que ya existe, aunque cambien las mayúsculas o los acentos.""",
+
     "vacantes.captura_ubicacion": """Sirve para registrar en qué municipio está una empresa, y opcionalmente su dirección y código postal.
 
 Las empresas sin municipio aparecen primero en la lista. El dato se guarda tal como se captura, sin buscarlo ni estimarlo de forma automática.""",
 
-    "vacantes.editor_coordenadas": """Sirve para registrar la ubicación exacta de cada empresa, con latitud y longitud, y así dibujarla en el Mapa territorial.
+    "vacantes.editor_coordenadas": """Sirve para registrar la ubicación exacta de cada empresa, con latitud y longitud, y así dibujarla en el Mapa territorial. Incluye todas las empresas registradas, tengan o no vacantes.
 
-Las coordenadas se pueden copiar desde Google Maps (clic derecho sobre el lugar) y pegarse en la columna «Pegar (lat, lon)», o escribirse por separado. En Tlaxcala, la latitud ronda 19.3 y la longitud ronda −98.2 (con signo menos).
+Se puede buscar una empresa por nombre y mostrar solo las que todavía no tienen coordenadas. Las coordenadas se pueden copiar desde Google Maps (clic derecho sobre el lugar) y pegarse en la columna «Pegar (lat, lon)», o escribirse por separado. En Tlaxcala, la latitud ronda 19.3 y la longitud ronda −98.2 (con signo menos).
 
 Si no se conoce la ubicación se deja vacío; ningún dato se calcula ni se estima. Solo se guardan las filas que cambiaron.""",
 

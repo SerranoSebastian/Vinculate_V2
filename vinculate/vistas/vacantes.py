@@ -11,6 +11,7 @@ from .. import navegacion
 from ..auth.sesion import Sesion, actual
 from ..components import charts, ui
 from ..core.catalogos_vacantes import AREAS_OPORTUNIDAD, EMPRESAS_SECTOR, PUESTOS_CATALOGO
+from ..core import puntos
 from ..core.constantes import ESTADOS_VACANTE, SIN_DATO, TIPOS_OPORTUNIDAD, VACANTES_COLS
 from ..core.texto import normalizar_texto, texto_vacio
 from ..core.ubicacion import MUNICIPIOS_TLAXCALA
@@ -187,29 +188,36 @@ def _seccion_empresas(s: Sesion) -> None:
         ui.mostrar_error(exc)
         cat = pd.DataFrame(columns=["nombre", "sector", "activo"])
     res = empresas.resumen(v, cat)
+    adic = _empresas_conocidas(s)
+    d = empresas.directorio(v, cat, adic)   # todas: con vacantes, del catálogo y las conocidas sin vacantes
     con_ubic = empresas.tiene_ubicacion(cat)
-    total = len(res)
-    ubicadas = int((res["Municipio"].astype(str).str.strip() != "").sum()) if total else 0
+    total = len(d)
+    ubicadas = int((d["Municipio"].astype(str).str.strip() != "").sum()) if total else 0
     c = st.columns(4)
-    ui.kpi("Empresas con vacantes", total, contenedor=c[0], info="vacantes.emp_total")
+    ui.kpi("Empresas registradas", total, f"{len(res)} con vacantes", contenedor=c[0], info="vacantes.emp_total")
     ui.kpi("Con municipio capturado", ubicadas if con_ubic else None, contenedor=c[1], no_disponible=not con_ubic, info="vacantes.emp_con_municipio",
            ayuda="" if con_ubic else "Requiere la migración V004")
     ui.kpi("Sin municipio", (total - ubicadas) if con_ubic else None, "Pendientes de ubicar", contenedor=c[2], no_disponible=not con_ubic,
            info="vacantes.emp_sin_municipio")
-    ui.kpi("Sectores", int(res["Sector"].replace("", pd.NA).nunique()) if total else 0, contenedor=c[3], info="vacantes.emp_sectores")
+    ui.kpi("Sectores", int(d["Sector"].replace("", pd.NA).nunique()) if total else 0, contenedor=c[3], info="vacantes.emp_sectores")
     if not con_ubic:
         st.info("La ubicación de empresas todavía no está habilitada en la base (migración V004). Mientras tanto, el mapa por "
                 "municipio usa solo la información de personas, y nada se inventa para las empresas.")
     ui.ayuda_grafica("vacantes.tabla_empresas", fila_propia=True)
-    ui.tabla(res, ["Empresa", "Sector", "Vacantes", "Vigentes", "Puestos distintos", "Municipio", "Ubicación"],
+    tabla = d.merge(res[["Empresa", "Puestos distintos", "Ubicación"]], on="Empresa", how="left")
+    tabla["Puestos distintos"] = tabla["Puestos distintos"].fillna(0).astype(int)
+    tabla["Ubicación"] = tabla["Ubicación"].fillna("")
+    ui.tabla(tabla, ["Empresa", "Sector", "Vacantes", "Vigentes", "Puestos distintos", "Municipio", "Ubicación"],
              {"Ubicación": "Fuente de ubicación"}, altura=360)
-    ui.boton_exportar(s, "vacantes", res, "empresas", "emp_exp")
-    if con_ubic and s.puede("vacantes", "edit") and not res.empty:
+    ui.boton_exportar(s, "vacantes", tabla, "empresas", "emp_exp")
+    if s.puede("vacantes", "create"):
+        _alta_empresa(s, d, adic, con_ubic)
+    if con_ubic and s.puede("vacantes", "edit") and not d.empty:
         st.markdown("#### Capturar la ubicación de una empresa")
         ui.ayuda_grafica("vacantes.captura_ubicacion", fila_propia=True)
         ui.nota("Registra solo el municipio (y opcionalmente dirección y código postal). No se geocodifica nada automáticamente.")
-        pendientes = res[res["Municipio"].astype(str).str.strip() == ""]["Empresa"].tolist()
-        todas = res["Empresa"].tolist()
+        pendientes = d[d["Municipio"].astype(str).str.strip() == ""]["Empresa"].tolist()
+        todas = d["Empresa"].tolist()
         orden = pendientes + [e for e in todas if e not in pendientes]
         with st.form("form_ubicacion_empresa"):
             c1, c2 = st.columns(2)
@@ -221,7 +229,7 @@ def _seccion_empresas(s: Sesion) -> None:
             enviar = st.form_submit_button("💾 Guardar ubicación", width="stretch")
         if enviar:
             try:
-                sector = res.loc[res["Empresa"].eq(empresa), "Sector"].iloc[0] or EMPRESAS_SECTOR.get(empresa)
+                sector = d.loc[d["Empresa"].eq(empresa), "Sector"].iloc[0] or EMPRESAS_SECTOR.get(empresa)
                 empresas.guardar_ubicacion(s, empresa, municipio, direccion, cp, sector)
             except ValueError as exc:
                 st.error(str(exc))
@@ -231,11 +239,48 @@ def _seccion_empresas(s: Sesion) -> None:
                 st.success(f"Ubicación de {empresa} guardada.")
                 st.rerun()
 
-    if con_ubic and s.puede("vacantes", "edit") and not res.empty:
-        _editor_coordenadas(s, v, cat)
+    if con_ubic and s.puede("vacantes", "edit") and not d.empty:
+        _editor_coordenadas(s, d, cat)
 
 
-def _editor_coordenadas(s: Sesion, v: pd.DataFrame, cat: pd.DataFrame) -> None:
+def _empresas_conocidas(s: Sesion) -> dict[str, str]:
+    """Empresas conocidas aunque no tengan vacantes (lista fija + las que ya tienen seguimientos), para ubicarlas en el mapa."""
+    vinc = datos.vinculaciones(s) if s.puede("vinculaciones", "view") else None
+    return empresas.adicionales(vinc)
+
+
+def _alta_empresa(s: Sesion, d: pd.DataFrame, adic: dict[str, str], con_ubic: bool) -> None:
+    """Alta de una empresa nueva (con o sin ubicación). Aparece enseguida en el mapa si trae coordenadas."""
+    with st.expander("➕ Agregar una empresa nueva"):
+        ui.ayuda_grafica("vacantes.emp_nueva", fila_propia=True)
+        sectores = sorted({x for x in [*d["Sector"].tolist(), *adic.values()] if str(x).strip()}, key=str.casefold)
+        with st.form("form_empresa_nueva", clear_on_submit=True):
+            nombre = st.text_input("Nombre de la empresa *")
+            c1, c2 = st.columns(2)
+            sector = c1.selectbox("Sector", [""] + sectores, format_func=lambda x: x or "Sin sector")
+            municipio = c2.selectbox("Municipio", ["", empresas.FUERA_DE_TLAXCALA, *MUNICIPIOS_TLAXCALA], format_func=lambda x: x or "Sin municipio",
+                                     disabled=not con_ubic)
+            c3, c4 = st.columns([3, 1])
+            direccion = c3.text_input("Dirección (opcional)", disabled=not con_ubic)
+            cp = c4.text_input("C.P. (opcional)", max_chars=5, disabled=not con_ubic)
+            pegado = st.text_input("Coordenadas (opcional)", placeholder="19.31390, -98.24040 (lo que copia Google Maps)", disabled=not con_ubic)
+            enviar = st.form_submit_button("💾 Guardar empresa", width="stretch")
+        if enviar:
+            lat, lon = puntos.parsear_coordenadas(pegado) if pegado.strip() else (None, None)
+            try:
+                if pegado.strip() and lat is None:
+                    raise ValueError("No pude leer las coordenadas. Usa el formato 19.31390, -98.24040.")
+                empresas.crear(s, nombre, sector, municipio, direccion, cp, lat, lon, conocidas=[*d["Empresa"], *adic])
+            except ValueError as exc:
+                st.error(str(exc))
+            except Exception as exc:  # noqa: BLE001
+                ui.mostrar_error(exc)
+            else:
+                st.success(f"Empresa «{nombre.strip()}» guardada.")
+                st.rerun()
+
+
+def _editor_coordenadas(s: Sesion, d: pd.DataFrame, cat: pd.DataFrame) -> None:
     """Edición rápida de latitud/longitud de todas las empresas (para el mapa). Guarda solo lo que cambió."""
     st.markdown("#### Coordenadas exactas (edición rápida)")
     ui.ayuda_grafica("vacantes.editor_coordenadas", fila_propia=True)
@@ -245,14 +290,23 @@ def _editor_coordenadas(s: Sesion, v: pd.DataFrame, cat: pd.DataFrame) -> None:
     ui.nota("Aquí capturas dónde está cada empresa para dibujarla en el **Mapa territorial**. En Google Maps: clic derecho sobre el lugar → "
             "clic en los números de arriba (se copian como 19.31390, -98.24040) → pégalos en «Pegar (lat, lon)». "
             "O escribe latitud (≈ 19.3) y longitud (≈ −98.2, con signo menos) por separado. Deja vacío lo que no sepas: nada se estima.")
-    d = empresas.directorio(v, cat)
+    c1, c2 = st.columns([2, 1])
+    q = c1.text_input("Buscar empresa", key="ed_coords_q", placeholder="Escribe parte del nombre")
+    solo_sin = c2.toggle("Solo sin coordenadas", key="ed_coords_solo_sin")
+    if q.strip():
+        d = d[d["Empresa"].map(normalizar_texto).str.contains(normalizar_texto(q.strip()), regex=False)]
+    if solo_sin:
+        d = d[d["Latitud"].map(puntos.parsear_numero).isna() | d["Longitud"].map(puntos.parsear_numero).isna()]
+    if d.empty:
+        ui.vacio("Ninguna empresa coincide.")
+        return
     base = d[["Empresa", "Sector", "Municipio", "Latitud", "Longitud"]].copy()
     base["Latitud"] = pd.to_numeric(base["Latitud"], errors="coerce")
     base["Longitud"] = pd.to_numeric(base["Longitud"], errors="coerce")
     vista_ed = base.assign(**{"Pegar (lat, lon)": ""})
     n = st.session_state.get("_coords_reinicio", 0)
     editado = st.data_editor(
-        vista_ed, hide_index=True, width="stretch", num_rows="fixed", key=f"ed_coords_{n}", height=380,
+        vista_ed, hide_index=True, width="stretch", num_rows="fixed", key=f"ed_coords_{n}_{int(solo_sin)}_{normalizar_texto(q.strip())}", height=380,
         disabled=["Empresa", "Sector", "Municipio"],
         column_config={
             "Latitud": st.column_config.NumberColumn("Latitud", format="%.6f", help="≈ 19.3 en Tlaxcala"),
@@ -279,13 +333,14 @@ def _seccion_alta(s: Sesion) -> None:
     st.markdown("Cada fila representa **un solo puesto**. El nombre del puesto se homologa para evitar variantes; "
                 "*Puesto original* conserva el texto capturado.")
     ui.ayuda_grafica("vacantes.alta_formulario", fila_propia=True)
+    nombres_emp, sector_emp = empresas.opciones(s)
     ui.bloque_deshacer(s, "vacantes")
     with st.form("form_alta_vacante"):
         c1, c2 = st.columns(2)
         with c1:
             actividad = st.text_input("Actividad", value="Publicación de vacantes")
             fecha = st.date_input("Fecha de publicación *", value=None, format="DD/MM/YYYY")
-            empresa = st.selectbox("Empresa *", ["Seleccionar..."] + sorted(EMPRESAS_SECTOR.keys()))
+            empresa = st.selectbox("Empresa *", ["Seleccionar..."] + nombres_emp)
             opcion_puesto = st.selectbox("Puesto normalizado *", ["Seleccionar..."] + catalogo + ["Otro / nuevo puesto"])
             puesto_nuevo = st.text_input("Si es otro puesto, escríbelo aquí")
             tipo_op = st.selectbox("Tipo de oportunidad *", TIPOS_OPORTUNIDAD)
@@ -312,7 +367,7 @@ def _seccion_alta(s: Sesion) -> None:
         return
     norm = normalizar_puesto_vacante(puesto)
     fila = {"ID Vacante": "", "ID Registro Origen": "", "Actividad": actividad, "Fecha": fecha, "Empresa": empresa,
-            "Sector Empresa": EMPRESAS_SECTOR.get(empresa, ""), "Puesto Original": puesto, "Tipo de Vacante": norm,
+            "Sector Empresa": sector_emp.get(empresa, ""), "Puesto Original": puesto, "Tipo de Vacante": norm,
             "Categoría de Puesto": categoria_puesto_vacante(norm, tipo_op), "Tipo de Oportunidad": tipo_op,
             "Área de Oportunidad": area, "Descripción": descripcion, "Requisitos": requisitos, "Beneficios": beneficios,
             "Link de la Publicación": link, "Estado": estado}
@@ -376,6 +431,7 @@ def _seccion_editar(s: Sesion) -> None:
         ui.vacio("No hay vacantes para editar.")
         return
     extras = guardado.columnas_opcionales(s, "vacantes")
+    nombres_emp, sector_emp = empresas.opciones(s)
     q = st.text_input("Buscar la vacante (empresa, puesto o ID)", key="vedit_q", placeholder="Ej. VAC-0042 · Textiles · Soldador")
     if not q.strip():
         ui.nota("Escribe algo para buscar. Se muestran hasta 200 vacantes.")
@@ -407,7 +463,7 @@ def _seccion_editar(s: Sesion) -> None:
                 actividad = st.text_input("Actividad", value=str(f.get("Actividad") or ""))
                 fv = pd.to_datetime(f["Fecha"], errors="coerce")
                 fecha = st.date_input("Fecha de publicación *", value=None if pd.isna(fv) else fv.date(), format="DD/MM/YYYY")
-                emp_ops = sorted(set(EMPRESAS_SECTOR) | {str(f["Empresa"])})
+                emp_ops = sorted(set(nombres_emp) | {str(f["Empresa"])})
                 empresa = st.selectbox("Empresa *", emp_ops, index=emp_ops.index(str(f["Empresa"])))
                 pue_ops = sorted(set(PUESTOS_CATALOGO) | {str(f["Tipo de Vacante"])})
                 puesto = st.selectbox("Puesto normalizado *", pue_ops, index=pue_ops.index(str(f["Tipo de Vacante"])))
@@ -429,7 +485,7 @@ def _seccion_editar(s: Sesion) -> None:
             guardar = st.form_submit_button("💾 Guardar cambios", width="stretch")
         if guardar:
             norm = normalizar_puesto_vacante(puesto)
-            nuevos = {"Actividad": actividad, "Fecha": fecha, "Empresa": empresa, "Sector Empresa": EMPRESAS_SECTOR.get(empresa, f.get("Sector Empresa", "")),
+            nuevos = {"Actividad": actividad, "Fecha": fecha, "Empresa": empresa, "Sector Empresa": sector_emp.get(empresa, f.get("Sector Empresa", "")),
                       "Tipo de Vacante": norm, "Categoría de Puesto": categoria_puesto_vacante(norm, tipo_op),
                       "Tipo de Oportunidad": tipo_op, "Área de Oportunidad": area, "Descripción": descripcion,
                       "Requisitos": requisitos, "Beneficios": beneficios, "Link de la Publicación": link, "Estado": estado}

@@ -32,6 +32,13 @@ class RepoEmpresas:
             raise traducir(exc, "la consulta del catálogo de empresas") from exc
         return (r.data or [None])[0]
 
+    def crear(self, carga: dict) -> None:
+        """INSERT de una empresa nueva (falla si el nombre ya existe: es la llave primaria)."""
+        try:
+            self.c.table(TABLA).insert(carga).execute()
+        except Exception as exc:  # noqa: BLE001
+            raise traducir(exc, "el alta de la empresa") from exc
+
     def guardar_ubicacion(self, nombre: str, sector: str | None, ubicacion: dict) -> None:
         """UPDATE de la empresa si existe; si no, INSERT. Nunca borra ni renombra empresas."""
         existente = self.obtener(nombre)

@@ -2,11 +2,14 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime, timezone
 
 import pandas as pd
 
 from ..auth import servicio as auth_servicio
 from ..auth.sesion import Sesion
+from ..core.catalogos_vacantes import EMPRESAS_SECTOR
+from ..core.constantes import SIN_DATO
 from ..core.puntos import parsear_coordenadas, parsear_numero, validar_coordenadas
 from ..core.texto import normalizar_texto
 from ..core.ubicacion import MUNICIPIOS_TLAXCALA
@@ -84,23 +87,79 @@ def tiene_coordenadas(df: pd.DataFrame) -> bool:
     return "latitud" in df.columns and "longitud" in df.columns
 
 
-def directorio(vacantes: pd.DataFrame, catalogo_df: pd.DataFrame) -> pd.DataFrame:
-    """Una fila por empresa (con vacantes o solo del catálogo) con ubicación y coordenadas capturadas. Nunca inventa nada."""
+_SIN_SECTOR = {"", "sin dato", "indefinido", "nan", "none"}
+
+
+def _sector_limpio(valor) -> str:
+    s = "" if valor is None else str(valor).strip()
+    return "" if s.lower() in _SIN_SECTOR else s
+
+
+def adicionales(vinculaciones: pd.DataFrame | None = None) -> dict[str, str]:
+    """Empresas conocidas aunque no tengan vacantes: la lista fija de la app más las que ya tienen seguimientos de vinculación.
+
+    Devuelve {nombre: sector}. No inventa ubicaciones: solo sirve para que esas empresas se puedan ubicar y aparezcan en el mapa."""
+    out = {n: _sector_limpio(s) for n, s in EMPRESAS_SECTOR.items()}
+    if vinculaciones is not None and not vinculaciones.empty and "empresa" in vinculaciones.columns:
+        vistos = {normalizar_texto(n) for n in out}
+        for _, r in vinculaciones.drop_duplicates("empresa").iterrows():
+            nombre = str(r["empresa"]).strip()
+            if nombre and nombre not in ("Sin asignar", SIN_DATO) and normalizar_texto(nombre) not in vistos:
+                out[nombre] = _sector_limpio(r.get("sector_empresa"))
+                vistos.add(normalizar_texto(nombre))
+    return out
+
+
+def opciones(sesion: Sesion) -> tuple[list[str], dict[str, str]]:
+    """Empresas para elegir en los formularios: la lista fija más las que se dieron de alta en el catálogo. (nombres, {nombre: sector})."""
+    sector = dict(EMPRESAS_SECTOR)
+    try:
+        cat = catalogo(sesion)
+    except ErrorDatos:
+        cat = pd.DataFrame()
+    if not cat.empty and "nombre" in cat.columns:
+        existentes = {normalizar_texto(n) for n in sector}
+        for _, r in cat.iterrows():
+            nombre = str(r["nombre"]).strip()
+            if nombre and r.get("activo") is not False and normalizar_texto(nombre) not in existentes:
+                sector[nombre] = _sector_limpio(r.get("sector"))
+    return sorted(sector, key=str.casefold), sector
+
+
+def directorio(vacantes: pd.DataFrame, catalogo_df: pd.DataFrame, adicional: dict[str, str] | None = None) -> pd.DataFrame:
+    """Una fila por empresa: con vacantes, del catálogo o de `adicional` (empresas conocidas sin vacantes), con su ubicación y
+    coordenadas capturadas. Nunca inventa nada."""
     res = resumen(vacantes, catalogo_df)
     cols = ["Empresa", "Sector", "Municipio", "Dirección", "C.P.", "Latitud", "Longitud", "Vacantes", "Vigentes"]
     base = res.reindex(columns=["Empresa", "Sector", "Municipio", "Vacantes", "Vigentes"]).copy()
     base["_clave"] = base["Empresa"].map(normalizar_texto)
+    extras = []
+    c = None
     if not catalogo_df.empty and "nombre" in catalogo_df.columns:
         c = catalogo_df.assign(_clave=catalogo_df["nombre"].map(normalizar_texto)).drop_duplicates("_clave")
         faltan = c[~c["_clave"].isin(base["_clave"])]
         if not faltan.empty:  # empresas del catálogo que aún no tienen vacantes
-            extra = pd.DataFrame({"Empresa": faltan["nombre"], "Sector": faltan.get("sector", ""),
-                                  "Municipio": faltan["municipio"] if "municipio" in faltan.columns else "",
-                                  "Vacantes": 0, "Vigentes": 0, "_clave": faltan["_clave"]})
-            base = pd.concat([base, extra], ignore_index=True)
+            extras.append(pd.DataFrame({"Empresa": faltan["nombre"], "Sector": faltan.get("sector", ""),
+                                        "Municipio": faltan["municipio"] if "municipio" in faltan.columns else "",
+                                        "Vacantes": 0, "Vigentes": 0, "_clave": faltan["_clave"]}))
+    if adicional:
+        ya = set(base["_clave"]) | ({*c["_clave"]} if c is not None else set())
+        nuevas = [(n, s) for n, s in adicional.items() if normalizar_texto(n) not in ya]
+        if nuevas:
+            extras.append(pd.DataFrame({"Empresa": [n for n, _ in nuevas], "Sector": [s for _, s in nuevas], "Municipio": "",
+                                        "Vacantes": 0, "Vigentes": 0, "_clave": [normalizar_texto(n) for n, _ in nuevas]}))
+    if extras:
+        base = pd.concat([base, *extras], ignore_index=True)
+    if c is not None:
         ci = c.set_index("_clave")
         for destino, origen in (("Dirección", "direccion"), ("C.P.", "codigo_postal"), ("Latitud", "latitud"), ("Longitud", "longitud")):
             base[destino] = base["_clave"].map(ci[origen]) if origen in ci.columns else None
+        if "municipio" in ci.columns:  # el municipio capturado en el catálogo manda también para empresas «adicionales»
+            vacio = base["Municipio"].fillna("").astype(str).str.strip().isin(["", "nan"])
+            base.loc[vacio, "Municipio"] = base.loc[vacio, "_clave"].map(ci["municipio"])
+        if "sector" in ci.columns:
+            vacio = base["Sector"].fillna("").astype(str).str.strip().isin(["", "nan"])
+            base.loc[vacio, "Sector"] = base.loc[vacio, "_clave"].map(ci["sector"])
     else:
         for destino in ("Dirección", "C.P.", "Latitud", "Longitud"):
             base[destino] = None
@@ -108,6 +167,38 @@ def directorio(vacantes: pd.DataFrame, catalogo_df: pd.DataFrame) -> pd.DataFram
         base[col] = base[col].fillna("").astype(str).replace("nan", "")
     base[["Vacantes", "Vigentes"]] = base[["Vacantes", "Vigentes"]].fillna(0).astype(int)
     return base[cols].sort_values(["Vacantes", "Empresa"], ascending=[False, True]).reset_index(drop=True)
+
+
+def crear(sesion: Sesion, nombre: str, sector: str = "", municipio: str = "", direccion: str = "", codigo_postal: str = "",
+          latitud=None, longitud=None, conocidas=()) -> None:
+    """Da de alta una empresa nueva en el catálogo (con o sin ubicación). Falla si el nombre ya existe (sin importar mayúsculas ni acentos)."""
+    if not sesion.puede("vacantes", "create"):
+        raise SinPermiso("Tu perfil no tiene permiso para dar de alta empresas.")
+    nombre = " ".join((nombre or "").split())
+    if not nombre:
+        raise ValueError("Escribe el nombre de la empresa.")
+    if normalizar_texto(nombre) in {normalizar_texto(x) for x in conocidas}:
+        raise ValueError("Esa empresa ya está en la lista. Para ubicarla usa «Coordenadas exactas (edición rápida)».")
+    municipio = (municipio or "").strip()
+    if municipio and municipio not in MUNICIPIOS_TLAXCALA and municipio != FUERA_DE_TLAXCALA:
+        raise ValueError("Elige uno de los 60 municipios de Tlaxcala o «Fuera de Tlaxcala».")
+    cp = (codigo_postal or "").strip()
+    if cp and not re.fullmatch(r"\d{5}", cp):
+        raise ValueError("El código postal debe tener 5 dígitos.")
+    problema = validar_coordenadas(latitud, longitud)
+    if problema:
+        raise ValueError(problema)
+    lat, lon = parsear_numero(latitud), parsear_numero(longitud)
+    repo = RepoEmpresas(sesion.cliente)
+    if repo.obtener(nombre) is not None:
+        raise ValueError("Esa empresa ya está en el catálogo.")
+    carga = {"nombre": nombre, "sector": (sector or "").strip() or None, "activo": True}
+    if municipio or (direccion or "").strip() or cp or lat is not None:
+        carga.update({"municipio": municipio or None, "direccion": (direccion or "").strip() or None, "codigo_postal": cp or None,
+                      "latitud": lat, "longitud": lon, "ubicacion_fuente": "manual",
+                      "ubicacion_actualizada": datetime.now(timezone.utc).isoformat()})
+    repo.crear(carga)
+    auth_servicio.auditar("empresa_creada", f"empresa={nombre}")
 
 
 def guardar_coordenadas(sesion: Sesion, empresa: str, latitud, longitud, sector: str | None = None) -> None:

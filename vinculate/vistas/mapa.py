@@ -227,7 +227,8 @@ def _bloque_empresas(sesion: Sesion):
         cat = empresas.catalogo(sesion)
     except ErrorDatos:
         cat = pd.DataFrame()
-    dir_ = empresas.directorio(vac, cat)
+    vinc = datos.vinculaciones(sesion) if sesion.puede("vinculaciones", "view") else None
+    dir_ = empresas.directorio(vac, cat, empresas.adicionales(vinc))   # incluye empresas conocidas aunque no tengan vacantes
     if not empresas.tiene_coordenadas(cat):
         return dir_, dir_.iloc[0:0], dir_, dir_.iloc[0:0], False
     ok, sin, mal = puntos.puntos_validos(dir_)
