@@ -78,6 +78,8 @@ VINCULACIONES_COLS = [
     "fecha_vinculacion", "fecha_colocacion", "observaciones", "responsable", "fecha_actualizacion",
 ]
 ESTATUS_VINCULACION = ["Vinculado", "Colocado", "No vinculado"]
+# Persona recién registrada que todavía no tiene ningún seguimiento con empresa. Los registros históricos anteriores siguen siendo «Vinculado».
+ESTATUS_REGISTRADA = "Registrada"
 ESTATUS_NUEVO = ["Vinculado", "No vinculado"]
 TIPOS_VINCULACION = ["Inserción Laboral", "Atención", "Prácticas Profesionales", "Servicio Social"]
 PREFIJOS_VINCULACION = {

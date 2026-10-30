@@ -8,7 +8,7 @@ from ..auth.sesion import Sesion, actual
 from ..components import charts, filtros, paneles, ui
 from ..core.constantes import SIN_DATO
 from ..core.normalizacion import homologar_nulos, unificar_variantes
-from ..core.personas import obtener_personas_maestras
+from ..core.personas import obtener_personas_maestras, solo_vinculaciones
 from ..core.vacantes import clasificar_vigencia, tiene_vigencia, vigentes_mask
 from ..services import datos
 from . import ficha
@@ -21,14 +21,15 @@ def _n_unicos(serie: pd.Series) -> int:
 
 def _kpis_personas(s: Sesion, pf: pd.DataFrame) -> None:
     unicas = int(pf["id_persona_maestro"].nunique()) if not pf.empty else 0
-    vinc = len(pf)
-    por_persona = pf.groupby("id_persona_maestro").size() if not pf.empty else pd.Series(dtype=int)
+    pv = solo_vinculaciones(pf)  # las personas solo registradas cuentan como personas, pero todavía no como vinculaciones
+    vinc = len(pv)
+    por_persona = pv.groupby("id_persona_maestro").size() if not pv.empty else pd.Series(dtype=int)
     recurrentes = int((por_persona > 1).sum())
-    sin_anio = int(pf["año"].isna().sum()) if not pf.empty else 0
+    sin_anio = int(pv["año"].isna().sum()) if not pv.empty else 0
     st.markdown("#### 👥 Personas")
     c = st.columns(5)
     ui.kpi("Personas únicas", unicas, "Cuenta cada persona una sola vez", contenedor=c[0], info="inicio.personas_unicas")
-    ui.kpi("Vinculaciones históricas", vinc, "Cada registro histórico", contenedor=c[1], info="inicio.vinculaciones_historicas")
+    ui.kpi("Vinculaciones históricas", vinc, "Registros que ya son vinculación", contenedor=c[1], info="inicio.vinculaciones_historicas")
     ui.kpi("Personas recurrentes", recurrentes, "Con 2 o más vinculaciones", contenedor=c[2], info="inicio.personas_recurrentes")
     ui.kpi("Vinculaciones por persona", (vinc / unicas) if unicas else None, "Promedio del filtro", contenedor=c[3], decimales=2, info="inicio.vinculaciones_por_persona")
     ui.kpi("Registros sin año", sin_anio, "No se asignan a ningún periodo", contenedor=c[4], info="inicio.registros_sin_anio")

@@ -21,7 +21,7 @@ from ..config.settings import GEO
 from ..config.theme import ESCALA_SEDECO, tema_grafica
 from ..core import mapa as nucleo
 from ..core import puntos
-from ..core.constantes import SIN_DATO
+from ..core.constantes import ESTATUS_REGISTRADA, SIN_DATO
 from ..core.ridet import region_de_municipio
 from ..core.texto import normalizar_texto
 from ..repositories.errores import ErrorDatos
@@ -87,6 +87,8 @@ def _serie_capa(sesion: Sesion, capa: str):
         return m["municipio"] if not m.empty else pd.Series(dtype=str), m, ["id_persona_maestro", "nombre", "carrera", "Institución"], ""
     if capa == "historicos":
         p = datos.personas(sesion)
+        if not p.empty:
+            p = p[p["estatus_vinculacion"].ne(ESTATUS_REGISTRADA)]  # quien solo está registrada todavía no tiene vinculación
         return p["municipio"] if not p.empty else pd.Series(dtype=str), p, ["id_persona", "nombre", "vinculacion", "Año"], ""
     vac = datos.vacantes(sesion)
     v, hay = _municipio_de_vacantes(sesion, vac)

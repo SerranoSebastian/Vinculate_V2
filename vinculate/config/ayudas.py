@@ -590,13 +590,37 @@ Desde aquí se pueden marcar como Inactivas, con confirmación previa. No se eli
     # ------------------------------------------------------------------ VINCULACIONES · Indicadores superiores
     "vinculaciones.kpi_personas": """Es el número de personas distintas registradas en el sistema. Cada persona se cuenta una sola vez, aunque tenga varias vinculaciones.""",
 
+    "vinculaciones.kpi_registradas": """Es el número de personas que ya fueron registradas pero todavía no han sido vinculadas con ninguna empresa.
+
+Registrar a una persona no es vincularla: una persona pasa a estar vinculada cuando se le crea un seguimiento con una empresa.""",
+
+    "vinculaciones.kpi_colocaciones": """Es el total de colocaciones registradas: cada vez que una persona quedó colocada en una empresa cuenta como una colocación.
+
+Una misma persona puede tener varias colocaciones en fechas distintas, por ejemplo si cambió de empresa. Por eso este número puede ser mayor que el de personas colocadas.""",
+
+    "vinculaciones.colocacion_intro": """Esta sección sirve para indicar en cuál de las empresas a las que fue vinculada una persona terminó colocada.
+
+Primero se elige a la persona; se muestran las empresas a las que fue vinculada y las colocaciones que ya tiene. Después se elige la empresa y la fecha. Una persona puede tener varias colocaciones, y se distinguen por su fecha: la más reciente es la vigente.""",
+
+    "vinculaciones.seguimientos_persona": """Es la lista de empresas a las que se ha vinculado a la persona elegida, con el puesto, el estatus y las fechas de vinculación y de colocación.
+
+Solo se puede marcar como colocación una vinculación con estatus «Vinculado».""",
+
+    "vinculaciones.colocaciones_persona": """Son las colocaciones que ya tiene la persona elegida, en orden de fecha: la columna «N.º» indica si fue la primera, la segunda, etc.
+
+La marcada como vigente es la de fecha más reciente, es decir, su colocación actual.""",
+
+    "vinculaciones.colocacion_formulario": """Sirve para registrar que la persona quedó colocada en una de las empresas a las que fue vinculada.
+
+Se elige la empresa, la fecha en que fue colocada y, solo si cambió, el puesto. La fecha no puede ser futura ni anterior a la fecha de vinculación, y no puede repetir la fecha de otra colocación de la misma persona. Antes de guardar se pide confirmación y queda registro de quién lo hizo.""",
+
     "vinculaciones.kpi_historicas": """Es el total de vinculaciones históricas registradas, sumando las de todas las personas. Una persona puede tener más de una.
 
 Son los registros de vinculación de las personas; no son contrataciones.""",
 
     "vinculaciones.kpi_vinculados": """Es el número de personas cuyo estatus actual es «Vinculado».
 
-El estatus de cada persona sale de su seguimiento más reciente con una empresa. Una persona sin seguimientos figura como «Vinculado» porque su registro histórico ya es una vinculación.""",
+El estatus de cada persona sale de su seguimiento más reciente con una empresa. Las personas registradas antes de este cambio, que no tienen seguimientos, figuran como «Vinculado» porque su registro histórico ya era una vinculación.""",
 
     "vinculaciones.kpi_colocados": """Es el número de personas cuyo estatus actual es «Colocado», es decir, que consiguieron un empleo. Si una persona tiene alguna colocación registrada, se toma la más reciente para definir su estatus.""",
 

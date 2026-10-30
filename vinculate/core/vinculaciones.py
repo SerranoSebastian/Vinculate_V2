@@ -5,7 +5,7 @@ from datetime import datetime
 
 import pandas as pd
 
-from .constantes import ESTATUS_VINCULACION, VINCULACIONES_COLS
+from .constantes import ESTATUS_REGISTRADA, ESTATUS_VINCULACION, VINCULACIONES_COLS
 from .personas import limpiar_personas, obtener_personas_maestras
 from .texto import parsear_fechas
 
@@ -115,7 +115,8 @@ def estado_por_persona(personas: pd.DataFrame, seguimientos: pd.DataFrame) -> pd
 
     Regla (igual que la v5): si existe algún seguimiento 'Colocado', cuenta el
     colocado más reciente; si no, el último seguimiento. Sin seguimientos, la
-    persona figura 'Vinculado' (su registro histórico ya es una vinculación).
+    persona figura 'Vinculado' si su registro es histórico (ya era una vinculación) y 'Registrada' si es una persona
+    nueva que todavía no tiene ningún seguimiento con empresa.
     """
     maestras = obtener_personas_maestras(personas).copy()
     seg = limpiar_vinculaciones(seguimientos, personas)
@@ -127,7 +128,8 @@ def estado_por_persona(personas: pd.DataFrame, seguimientos: pd.DataFrame) -> pd
         g = por_maestro.get(p["id_persona_maestro"])
         r = p.to_dict()
         if g is None or g.empty:
-            r.update({"estatus_general": "Vinculado", "seguimientos_empresa": 0, "empresas_contactadas": 0, "empresa_actual": ""})
+            solo_registro = int(p.get("total_vinculaciones", 1) or 0) == 0
+            r.update({"estatus_general": ESTATUS_REGISTRADA if solo_registro else "Vinculado", "seguimientos_empresa": 0, "empresas_contactadas": 0, "empresa_actual": ""})
         else:
             g = g.sort_values(["fecha_actualizacion", "fecha_vinculacion"], na_position="first")
             coloc = g[g["estatus"].eq("Colocado")]

@@ -7,7 +7,7 @@ import streamlit as st
 from .. import navegacion
 from ..auth.sesion import Sesion, actual
 from ..components import ui
-from ..core.constantes import SIN_DATO
+from ..core.constantes import ESTATUS_REGISTRADA, SIN_DATO
 from ..core.normalizacion import es_nulo
 from ..core.texto import fecha_visible, texto_vacio, visible
 from ..repositories.errores import ErrorDatos
@@ -65,9 +65,10 @@ def contenido(sesion: Sesion, id_maestro: str) -> None:
 
     faltan = _faltantes(fila)
     st.subheader(visible(fila.get("nombre")))
-    chips = ui.chip(f"ID {id_maestro}") + ui.chip(estatus, "ok" if estatus in ("Vinculado", "Colocado") else "no")
-    if len(hist) > 1:
-        chips += ui.chip(f"Recurrente · {len(hist)} vinculaciones")
+    chips = ui.chip(f"ID {id_maestro}") + ui.chip(estatus, "ok" if estatus in ("Vinculado", "Colocado") else ("est" if estatus == ESTATUS_REGISTRADA else "no"))
+    n_vinc = int(hist["estatus_vinculacion"].ne(ESTATUS_REGISTRADA).sum()) if "estatus_vinculacion" in hist.columns else len(hist)
+    if n_vinc > 1:
+        chips += ui.chip(f"Recurrente · {n_vinc} vinculaciones")
     if faltan:
         chips += ui.chip(f"{len(faltan)} dato(s) incompleto(s)", "est")
     st.markdown(chips, unsafe_allow_html=True)

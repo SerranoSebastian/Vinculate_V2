@@ -6,12 +6,14 @@ import plotly.graph_objects as go
 
 from ..config.theme import PALETA_SEDECO, tema_grafica
 from ..core.normalizacion import agrupar_tipo_vinculacion
+from ..core.personas import solo_vinculaciones
 from . import charts
 
 
 def tabla_anual(pf: pd.DataFrame) -> pd.DataFrame:
     """Por año: personas únicas, vinculaciones, promedio y personas recurrentes (solo registros con año)."""
-    con = pf[pf["año"].notna()]
+    con = solo_vinculaciones(pf)
+    con = con[con["año"].notna()]
     filas = []
     for anio, g in con.groupby("año"):
         por_persona = g.groupby("id_persona_maestro").size()
@@ -24,7 +26,8 @@ def tabla_anual(pf: pd.DataFrame) -> pd.DataFrame:
 
 def evolucion_anual(pf: pd.DataFrame, clave: str) -> bool:
     """Barras de vinculaciones por año + línea de personas únicas. False si no hay datos."""
-    con = pf[pf["año"].notna()]
+    con = solo_vinculaciones(pf)  # solo cuentan las personas que ya tienen una vinculación
+    con = con[con["año"].notna()]
     if con.empty:
         from . import ui
         ui.vacio("No hay registros con año para mostrar la evolución.")
@@ -42,5 +45,5 @@ def evolucion_anual(pf: pd.DataFrame, clave: str) -> bool:
 
 
 def tipos_vinculacion(pf: pd.DataFrame, clave: str) -> None:
-    d = charts.conteo(agrupar_tipo_vinculacion(pf["vinculacion"]), "Tipo", "Vinculaciones")
+    d = charts.conteo(agrupar_tipo_vinculacion(solo_vinculaciones(pf)["vinculacion"]), "Tipo", "Vinculaciones")
     charts.mostrar(charts.dona(d, "Tipo", "Vinculaciones", "Vinculaciones por tipo", 380), clave)

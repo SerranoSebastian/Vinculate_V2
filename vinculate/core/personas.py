@@ -9,7 +9,7 @@ from __future__ import annotations
 import pandas as pd
 
 from .constantes import (
-    ALIASES_PERSONAS, PERSONAS_COLS, PERSONAS_COLS_OPCIONALES, PREFIJOS_VINCULACION,
+    ALIASES_PERSONAS, ESTATUS_REGISTRADA, PERSONAS_COLS, PERSONAS_COLS_OPCIONALES, PREFIJOS_VINCULACION,
     TIPOS_VINCULACION,
 )
 from .normalizacion import SINONIMOS
@@ -91,8 +91,10 @@ def limpiar_personas(df: pd.DataFrame, generar_ids: bool = True) -> pd.DataFrame
     df["sexo"] = df["sexo"].map(_redaccion_sexo)          # «MASCULINO», «masculino» → «Masculino»
     df["escolaridad"] = df["escolaridad"].map(_primera_mayuscula)
     df["municipio"] = df["municipio"].apply(normalizar_ubicacion_mexico)
-    # Todo registro histórico representa una vinculación confirmada en el esquema actual.
-    df["estatus_vinculacion"] = "Vinculado"
+    # Los registros históricos son vinculaciones confirmadas; solo las personas nuevas se guardan como «Registrada»
+    # (registro sin vinculación todavía: pasan a ser vinculadas cuando tienen un seguimiento con empresa).
+    df["estatus_vinculacion"] = df["estatus_vinculacion"].map(
+        lambda v: ESTATUS_REGISTRADA if normalizar_texto(v) == normalizar_texto(ESTATUS_REGISTRADA) else "Vinculado")
     df["edad"] = pd.to_numeric(df["edad"], errors="coerce")
     df["fecha_registro"] = parsear_fechas(df["fecha_registro"])
 
@@ -164,8 +166,16 @@ def preparar_personas_dashboard(df: pd.DataFrame) -> pd.DataFrame:
     df = limpiar_personas(df)
     df["mes"] = df["fecha_registro"].dt.to_period("M").astype(str).replace("NaT", "")
     df["año"] = pd.to_numeric(df["Año"], errors="coerce").astype("Int64")
+    df["es_vinculacion"] = df["estatus_vinculacion"].ne(ESTATUS_REGISTRADA)
     df["grupo_edad"] = pd.cut(df["edad"], bins=GRUPOS_EDAD_BINS, labels=GRUPOS_EDAD_LABELS)
     return df
+
+
+def solo_vinculaciones(df: pd.DataFrame) -> pd.DataFrame:
+    """Registros históricos que SÍ son vinculación (excluye a las personas solo registradas, sin seguimiento todavía)."""
+    if df.empty or "es_vinculacion" not in df.columns:
+        return df
+    return df[df["es_vinculacion"]]
 
 
 _COLS_PERSONA = ["nombre", "sexo", "edad", "escolaridad", "carrera", "Institución", "municipio",
@@ -187,10 +197,10 @@ def obtener_personas_maestras(df: pd.DataFrame) -> pd.DataFrame:
             validos = validos[~validos.str.strip().str.lower().isin(["", "nan", "none", "indefinido"])]
             if len(validos):
                 base[col] = validos.iloc[-1]
-        base["total_vinculaciones"] = len(g)
+        base["total_vinculaciones"] = int(g["es_vinculacion"].sum())
         base["primera_fecha"] = g["fecha_registro"].min()
         base["ultima_fecha"] = g["fecha_registro"].max()
-        base["tipos_vinculacion"] = ", ".join(sorted({x for x in g["vinculacion"] if str(x).strip()}))
+        base["tipos_vinculacion"] = ", ".join(sorted({x for x in g.loc[g["es_vinculacion"], "vinculacion"] if str(x).strip()}))
         anios = pd.to_numeric(g["Año"], errors="coerce").dropna().astype(int)
         base["años_con_registro"] = ", ".join(map(str, sorted(anios.unique())))
         filas.append(base)
@@ -204,11 +214,13 @@ def resumen_vinculaciones_por_persona(df: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame(columns=["id_persona_maestro", "nombre", "total_vinculaciones", "primera_fecha", "ultima_fecha"])
     nombres = obtener_personas_maestras(df).set_index("id_persona_maestro")["nombre"]
     res = df.groupby("id_persona_maestro").agg(
-        total_vinculaciones=("id_persona", "count"),
+        total_vinculaciones=("es_vinculacion", "sum"),
         primera_fecha=("fecha_registro", "min"),
         ultima_fecha=("fecha_registro", "max"),
     ).reset_index()
     res["nombre"] = res["id_persona_maestro"].map(nombres)
+    res["total_vinculaciones"] = res["total_vinculaciones"].astype(int)
+    res = res[res["total_vinculaciones"] > 0]  # quien solo está registrada todavía no tiene vinculaciones
     return res[["id_persona_maestro", "nombre", "total_vinculaciones", "primera_fecha", "ultima_fecha"]].sort_values(
         ["total_vinculaciones", "nombre"], ascending=[False, True]
     )

@@ -10,14 +10,16 @@ from .. import navegacion
 from ..auth.sesion import Sesion, actual
 from ..components import charts, ui
 from ..core.catalogos_vacantes import AREAS_OPORTUNIDAD, PUESTOS_CATALOGO
-from ..core.constantes import ESTATUS_NUEVO, ESTATUS_VINCULACION, SIN_DATO
+from ..core.colocaciones import colocaciones as calcular_colocaciones
+from ..core.constantes import ESTATUS_NUEVO, ESTATUS_REGISTRADA, ESTATUS_VINCULACION, SIN_DATO
 from ..core.texto import normalizar_texto, texto_vacio
 from ..core.vacantes import vigentes_mask
+from ..services import colocaciones as servicio_colocaciones
 from ..services import datos, empresas, guardado
 from . import ficha
 
 SECCIONES = {
-    "nuevo": "➕ Nuevo seguimiento", "editar": "✏️ Editar / eliminar", "estadisticas": "📊 Estadísticas",
+    "nuevo": "➕ Nuevo seguimiento", "colocacion": "🏁 Colocación", "editar": "✏️ Editar / eliminar", "estadisticas": "📊 Estadísticas",
     "historial": "👤 Historial de una persona", "exportar": "⬇️ Exportar",
 }
 MAX_FILAS = 200
@@ -43,18 +45,22 @@ def _etiqueta(m: pd.Series) -> str:
 
 
 def _kpis(estado: pd.DataFrame, seg: pd.DataFrame) -> None:
-    c = st.columns(7)
+    def cuenta(estatus: str) -> int:
+        return int(estado["estatus_general"].eq(estatus).sum()) if not estado.empty else 0
+
+    c = st.columns(5)
     ui.kpi("Personas únicas", len(estado), contenedor=c[0], info="vinculaciones.kpi_personas")
-    ui.kpi("Vinculaciones históricas", int(estado["total_vinculaciones"].sum()) if not estado.empty else 0, contenedor=c[1],
+    ui.kpi("Solo registradas", cuenta(ESTATUS_REGISTRADA), "Aún sin vinculación", contenedor=c[1], info="vinculaciones.kpi_registradas")
+    ui.kpi("Vinculados", cuenta("Vinculado"), contenedor=c[2], info="vinculaciones.kpi_vinculados")
+    ui.kpi("Colocados", cuenta("Colocado"), contenedor=c[3], info="vinculaciones.kpi_colocados")
+    ui.kpi("No vinculados", cuenta("No vinculado"), contenedor=c[4], info="vinculaciones.kpi_no_vinculados")
+    c = st.columns(4)
+    ui.kpi("Vinculaciones históricas", int(estado["total_vinculaciones"].sum()) if not estado.empty else 0, contenedor=c[0],
            info="vinculaciones.kpi_historicas")
-    ui.kpi("Vinculados", int(estado["estatus_general"].eq("Vinculado").sum()) if not estado.empty else 0, contenedor=c[2],
-           info="vinculaciones.kpi_vinculados")
-    ui.kpi("Colocados", int(estado["estatus_general"].eq("Colocado").sum()) if not estado.empty else 0, contenedor=c[3],
-           info="vinculaciones.kpi_colocados")
-    ui.kpi("No vinculados", int(estado["estatus_general"].eq("No vinculado").sum()) if not estado.empty else 0, contenedor=c[4],
-           info="vinculaciones.kpi_no_vinculados")
-    ui.kpi("Seguimientos", len(seg), contenedor=c[5], info="vinculaciones.kpi_seguimientos")
-    ui.kpi("Empresas", int(seg.loc[seg["empresa"].ne("Sin asignar"), "empresa"].nunique()) if not seg.empty else 0, contenedor=c[6],
+    ui.kpi("Seguimientos", len(seg), contenedor=c[1], info="vinculaciones.kpi_seguimientos")
+    ui.kpi("Colocaciones", int(seg["estatus"].eq("Colocado").sum()) if not seg.empty else 0, "Cada colocación cuenta, aunque sea la misma persona",
+           contenedor=c[2], info="vinculaciones.kpi_colocaciones")
+    ui.kpi("Empresas", int(seg.loc[seg["empresa"].ne("Sin asignar"), "empresa"].nunique()) if not seg.empty else 0, contenedor=c[3],
            info="vinculaciones.kpi_empresas")
 
 
@@ -115,6 +121,99 @@ def _seccion_nuevo(s: Sesion, preseleccion: str | None) -> None:
         ui.flash(res)
         st.rerun()
     ui.mostrar_resultado(res)
+
+
+# -------------------------------------------------------------- colocación
+def _etiqueta_seguimiento(f: pd.Series) -> str:
+    fv = pd.to_datetime(f.get("fecha_vinculacion"), errors="coerce")
+    cuando = "sin fecha" if pd.isna(fv) else fv.strftime("%d/%m/%Y")
+    return f"{f['empresa']} — {f['tipo_vacante']} — vinculada el {cuando} ({f['id_vinculacion']})"
+
+
+def _seccion_colocacion(s: Sesion, preseleccion: str | None) -> None:
+    if not s.puede("personas", "view"):
+        st.info("Para registrar una colocación tu perfil necesita poder consultar personas.")
+        return
+    seg = datos.vinculaciones(s)
+    maestras = datos.maestras(s)
+    m = maestras[maestras["id_persona_maestro"].isin(set(seg["id_persona_maestro"]))] if not seg.empty else maestras.iloc[0:0]
+    if m.empty:
+        ui.vacio("Todavía no hay personas vinculadas a una empresa. Primero registra la vinculación en «Nuevo seguimiento».")
+        return
+    m = m.sort_values(["nombre", "id_persona_maestro"]).reset_index(drop=True)
+    ui.ayuda_grafica("vinculaciones.colocacion_intro", fila_propia=True)
+    st.markdown("Aquí se indica **en cuál de las empresas a las que fue vinculada quedó colocada** una persona. "
+                "Una persona puede tener varias colocaciones a lo largo del tiempo; se distinguen por su fecha.")
+    ids = list(m["id_persona_maestro"])
+    i = st.selectbox("Persona", list(m.index), index=ids.index(preseleccion) if preseleccion in ids else 0,
+                     format_func=lambda k: f"{m.loc[k, 'nombre']} — {m.loc[k, 'id_persona_maestro']}", key="col_persona")
+    mid = ids[i]
+    mia = seg[seg["id_persona_maestro"].eq(mid)].sort_values(["fecha_vinculacion", "fecha_actualizacion"], ascending=False, na_position="last").reset_index(drop=True)
+    st.markdown("#### Empresas a las que fue vinculada")
+    ui.ayuda_grafica("vinculaciones.seguimientos_persona", fila_propia=True)
+    ui.tabla(mia, ["id_vinculacion", "empresa", "tipo_vacante", "estatus", "fecha_vinculacion", "fecha_colocacion"],
+             {"id_vinculacion": "ID", "empresa": "Empresa", "tipo_vacante": "Puesto", "estatus": "Estatus",
+              "fecha_vinculacion": "Vinculación", "fecha_colocacion": "Colocación"},
+             fechas=("fecha_vinculacion", "fecha_colocacion"), altura=min(60 + 36 * len(mia), 300), key=f"col_seg_{mid}")
+    col = calcular_colocaciones(mia)
+    st.markdown("#### Colocaciones de esta persona")
+    ui.ayuda_grafica("vinculaciones.colocaciones_persona", fila_propia=True)
+    if col.empty:
+        ui.nota("Todavía no tiene ninguna colocación registrada.")
+    else:
+        vista = col.assign(Vigente=col["vigente"].map({True: "Sí", False: ""}))
+        ui.tabla(vista, ["n_colocacion", "empresa", "tipo_vacante", "fecha_colocacion", "Vigente"],
+                 {"n_colocacion": "N.º", "empresa": "Empresa", "tipo_vacante": "Puesto", "fecha_colocacion": "Fecha de colocación"},
+                 fechas=("fecha_colocacion",), altura=min(60 + 36 * len(vista), 260), key=f"col_hist_{mid}")
+        ui.nota(f"{len(col)} colocación(es) registrada(s). La vigente es la de fecha más reciente.")
+
+    st.markdown("#### Registrar una colocación")
+    elegibles = mia[mia["estatus"].eq("Vinculado")].reset_index(drop=True)
+    if elegibles.empty:
+        ui.nota("Esta persona no tiene seguimientos con estatus «Vinculado» disponibles para marcar como colocación.")
+    else:
+        ui.ayuda_grafica("vinculaciones.colocacion_formulario", fila_propia=True)
+        with st.form(f"form_colocacion_{mid}"):
+            k = st.selectbox("Empresa en la que quedó colocada", list(elegibles.index),
+                             format_func=lambda x: _etiqueta_seguimiento(elegibles.loc[x]))
+            c1, c2 = st.columns(2)
+            fecha = c1.date_input("Fecha de colocación", value=date.today(), format="DD/MM/YYYY")
+            puesto = c2.text_input("Puesto (solo si cambió respecto al seguimiento)", value="")
+            enviar = st.form_submit_button("🏁 Registrar colocación", width="stretch")
+        if enviar:
+            f = elegibles.loc[k]
+            st.session_state["_col_pendiente"] = {"id": str(f["id_vinculacion"]), "fecha": fecha, "puesto": puesto}
+            ui.pedir_confirmacion("col_registrar", f"Registrar la colocación de {m.loc[i, 'nombre']}",
+                                  [f"Empresa: {f['empresa']}", f"Puesto: {puesto.strip() or f['tipo_vacante']}",
+                                   f"Fecha de colocación: {fecha.strftime('%d/%m/%Y')}",
+                                   "El seguimiento pasará a «Colocado». Las demás empresas a las que fue vinculada no cambian.",
+                                   "Se guarda en la auditoría."], "Registrar colocación")
+        if ui.confirmado("col_registrar"):
+            p = st.session_state.pop("_col_pendiente", None)
+            if p:
+                r = servicio_colocaciones.registrar(s, p["id"], p["fecha"], p["puesto"])
+                if r.ok and r.guardados:
+                    ui.flash(r)
+                    st.rerun()
+                ui.mostrar_resultado(r)
+    if not col.empty:
+        with st.expander("↩️ Quitar una colocación registrada por error"):
+            q = st.selectbox("Colocación", list(col.index), key=f"col_quitar_{mid}",
+                             format_func=lambda x: f"N.º {col.loc[x, 'n_colocacion']} — {col.loc[x, 'empresa']} — "
+                                                   f"{pd.to_datetime(col.loc[x, 'fecha_colocacion'], errors='coerce').strftime('%d/%m/%Y') if pd.notna(col.loc[x, 'fecha_colocacion']) else 'sin fecha'}")
+            if st.button("Quitar esta colocación", key=f"col_btn_quitar_{mid}"):
+                st.session_state["_col_quitar"] = str(col.loc[q, "id_vinculacion"])
+                ui.pedir_confirmacion("col_quitar", "Quitar la colocación",
+                                      [f"Empresa: {col.loc[q, 'empresa']}", "El seguimiento volverá a «Vinculado» y se borrará su fecha de colocación.",
+                                       "La persona y sus demás vinculaciones no se tocan."], "Quitar colocación")
+            if ui.confirmado("col_quitar"):
+                sid = st.session_state.pop("_col_quitar", None)
+                if sid:
+                    r = servicio_colocaciones.quitar(s, sid)
+                    if r.ok and r.guardados:
+                        ui.flash(r)
+                        st.rerun()
+                    ui.mostrar_resultado(r)
 
 
 # ----------------------------------------------------------------- editar
@@ -199,7 +298,8 @@ def _seccion_estadisticas(s: Sesion, estado: pd.DataFrame, seg: pd.DataFrame) ->
                                    "Estatus actual por persona"), "vs_estatus")
     with c2:
         if not personas_df.empty:
-            hist = personas_df.groupby("id_persona_maestro").size().value_counts().sort_index().reset_index()
+            vinc_df = personas_df[personas_df["estatus_vinculacion"].ne(ESTATUS_REGISTRADA)]
+            hist = vinc_df.groupby("id_persona_maestro").size().value_counts().sort_index().reset_index()
             hist.columns = ["Vinculaciones", "Personas"]
             hist["Vinculaciones"] = hist["Vinculaciones"].astype(str)
             ui.ayuda_grafica("vinculaciones.grafica_historicas", fila_propia=False)
@@ -281,6 +381,8 @@ def render() -> None:
     disponibles = {}
     if s.puede("vinculaciones", "create"):
         disponibles["nuevo"] = SECCIONES["nuevo"]
+    if s.puede("vinculaciones", "edit"):
+        disponibles["colocacion"] = SECCIONES["colocacion"]
     if s.puede("vinculaciones", "edit") or s.puede("vinculaciones", "delete"):
         disponibles["editar"] = SECCIONES["editar"]
     if s.puede("vinculaciones", "view"):
@@ -301,6 +403,8 @@ def render() -> None:
     persona = params.get("persona")
     if clave == "nuevo":
         _seccion_nuevo(s, persona)
+    elif clave == "colocacion":
+        _seccion_colocacion(s, persona)
     elif clave == "editar":
         _seccion_editar(s)
     elif clave == "estadisticas":

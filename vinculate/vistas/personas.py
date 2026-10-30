@@ -14,9 +14,9 @@ from ..core.catalogos_academicos import (
     ESCOLARIDADES, GRUPOS_PRIORITARIOS, catalogo_areas, catalogo_carreras, catalogo_instituciones,
     escolaridad_canonica, grupo_canonico, opcion_canonica,
 )
-from ..core.constantes import PERSONAS_COLS, SIN_DATO, TIPOS_VINCULACION
+from ..core.constantes import ESTATUS_REGISTRADA, PERSONAS_COLS, SIN_DATO, TIPOS_VINCULACION
 from ..core.normalizacion import agrupar_tipo_vinculacion, homologar_nulos
-from ..core.personas import obtener_personas_maestras, resumen_vinculaciones_por_persona
+from ..core.personas import obtener_personas_maestras, resumen_vinculaciones_por_persona, solo_vinculaciones
 from ..core.texto import normalizar_texto, texto_vacio
 from ..core.ubicacion import MUNICIPIOS_TLAXCALA, OPCIONES_UBICACION_FILTRO, normalizar_ubicacion_mexico, opciones_ubicacion
 from ..services import datos, guardado
@@ -137,21 +137,22 @@ def _seccion_analisis(s: Sesion) -> None:
     if pf.empty:
         ui.vacio()
         return
-    por_persona = pf.groupby("id_persona_maestro").size()
-    unicas, vinc = int(pf["id_persona_maestro"].nunique()), len(pf)
+    pv = solo_vinculaciones(pf)  # las personas solo registradas cuentan como personas, no como vinculaciones
+    por_persona = pv.groupby("id_persona_maestro").size()
+    unicas, vinc = int(pf["id_persona_maestro"].nunique()), len(pv)
     c = st.columns(6)
     ui.kpi("Personas únicas", unicas, contenedor=c[0], info="personas.personas_unicas")
     ui.kpi("Vinculaciones", vinc, contenedor=c[1], info="personas.vinculaciones")
     ui.kpi("Recurrentes", int((por_persona > 1).sum()), "2 o más vinculaciones", contenedor=c[2], info="personas.recurrentes")
     ui.kpi("Vinculaciones por persona", vinc / unicas if unicas else None, contenedor=c[3], decimales=2, info="personas.vinculaciones_por_persona")
-    ui.kpi("Máximo por persona", int(por_persona.max()), contenedor=c[4], info="personas.maximo_por_persona")
-    ui.kpi("Sin año", int(pf["año"].isna().sum()), "No se asignan a un periodo", contenedor=c[5], info="personas.sin_anio")
+    ui.kpi("Máximo por persona", int(por_persona.max()) if len(por_persona) else 0, contenedor=c[4], info="personas.maximo_por_persona")
+    ui.kpi("Sin año", int(pv["año"].isna().sum()), "No se asignan a un periodo", contenedor=c[5], info="personas.sin_anio")
     vista = st.segmented_control("Vista", ["Resumen", "Evolución anual", "Recurrencia", "Perfil"], default="Resumen",
                                  key="personas_vista", label_visibility="collapsed") or "Resumen"
     if vista == "Resumen":
         c1, c2 = st.columns(2)
         with c1:
-            tipos = charts.conteo(agrupar_tipo_vinculacion(pf["vinculacion"]), "Tipo", "Vinculaciones")
+            tipos = charts.conteo(agrupar_tipo_vinculacion(pv["vinculacion"]), "Tipo", "Vinculaciones")
             ui.ayuda_grafica("personas.grafica_tipos")
             charts.mostrar(charts.barras_h(tipos, "Tipo", "Vinculaciones", "Vinculaciones por tipo"), "pa_tipos")
         with c2:
@@ -171,7 +172,7 @@ def _seccion_analisis(s: Sesion) -> None:
             st.subheader("Indicadores anuales")
             ui.ayuda_grafica("personas.tabla_anual", fila_propia=True)
             ui.tabla(paneles.tabla_anual(pf))
-            sin = int(pf["año"].isna().sum())
+            sin = int(pv["año"].isna().sum())
             ui.nota(f"Además hay {sin:,} vinculación(es) sin año; se conservan y no se asignan a ningún periodo.")
     elif vista == "Recurrencia":
         res = resumen_vinculaciones_por_persona(pf)
@@ -255,8 +256,9 @@ def _seccion_directorio(s: Sesion, preseleccion: str | None) -> None:
 def _seccion_alta(s: Sesion, preseleccion: str | None) -> None:
     df = datos.personas(s)
     maestras = datos.maestras(s) if not df.empty else pd.DataFrame()
-    st.markdown("Cada captura agrega una **vinculación histórica**. Si la persona ya existe se conserva su ID de persona; "
-                "si es nueva, el sistema le asigna uno **al guardar** (así nunca choca con capturas simultáneas de otras personas).")
+    st.markdown("Una persona **nueva** solo se **registra**: todavía no cuenta como vinculada, lo será cuando se le cree un seguimiento con una empresa "
+                "en «Vinculaciones». El sistema le asigna su ID **al guardar** (así nunca choca con capturas simultáneas de otras personas). "
+                "Si la persona ya existe, la captura se agrega a su historial y se conserva su ID.")
     ref = None
     modo = st.radio("¿La persona ya existe?", ["Sí, asociar a una persona existente", "No, crear una persona nueva"],
                     horizontal=True, index=0 if preseleccion else 1, key="alta_modo")
@@ -280,7 +282,7 @@ def _seccion_alta(s: Sesion, preseleccion: str | None) -> None:
         homonimo = False
         if ref is None:
             homonimo = st.checkbox("Si ya existe una persona con este mismo nombre, confirmo que es OTRA persona.", key="alta_homonimo")
-        enviar = st.form_submit_button("💾 Guardar vinculación", width="stretch")
+        enviar = st.form_submit_button("💾 Guardar registro" if ref is None else "💾 Guardar vinculación", width="stretch")
     if enviar:
         if ref is None and not maestras.empty and normalizar_texto(valores["nombre"]) in set(maestras["nombre"].map(normalizar_texto)):
             if not homonimo:
@@ -289,7 +291,8 @@ def _seccion_alta(s: Sesion, preseleccion: str | None) -> None:
                 return
         fecha = valores["fecha_registro"]
         fila = {**valores, "id_persona": "", "id_persona_maestro": ref["id_persona_maestro"] if ref is not None else "",
-                "Año": fecha.year if fecha else "", "estatus_vinculacion": "Vinculado"}
+                "Año": fecha.year if fecha else "",
+                "estatus_vinculacion": ESTATUS_REGISTRADA if ref is None else "Vinculado"}  # persona nueva: solo registro, aún sin vinculación
         try:
             res = guardado.importar_personas(s, pd.DataFrame([fila]), origen="Captura manual", archivo="Captura manual")
         except Exception as exc:  # noqa: BLE001
