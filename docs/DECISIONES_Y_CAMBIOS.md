@@ -140,3 +140,12 @@
 - **Estatus general** (`estado_por_persona`): sin seguimientos → «Registrada» si solo tiene registros de este tipo, «Vinculado» si es histórica; con seguimientos, igual que antes.
 - **Colocación** (Vinculaciones → «🏁 Colocación», requiere `vinculaciones.edit`): se elige a la persona, se ven las empresas a las que fue vinculada y sus colocaciones, y se marca en cuál quedó colocada con fecha (y puesto si cambió). Cada seguimiento «Colocado» es una colocación; una persona puede tener varias, numeradas por fecha (la más reciente es la vigente). Reglas: solo desde un seguimiento «Vinculado», fecha no futura ni anterior a la vinculación, y sin repetir la fecha de otra colocación de la misma persona. Pide confirmación y audita (`colocacion_registrada`, `colocacion_quitada`). Se puede quitar una colocación por error (vuelve a «Vinculado»).
 - Código: `core/colocaciones.py`, `services/colocaciones.py`, `vistas/vinculaciones.py` (`_seccion_colocacion`). Pendiente para el siguiente paso: línea del tiempo de trazabilidad (institución → empresas → colocación) y estadísticas por institución de origen.
+
+## Imputación proporcional de datos faltantes
+
+- Instrucción de la dependencia: «imputar» los nulos en lugar de mostrarlos como «Indefinido». Se implementó la distribución proporcional (probabilidad frecuencial): cada persona sin dato recibe un valor según la proporción que tienen las personas con dato conocido. Detalle y justificación en `docs/IMPUTACION.md`.
+- Se aplica **solo al consultar** (`preparar_personas_dashboard`), nunca se guarda en la base (Supabase sigue siendo la fuente de verdad). Columnas: `sexo`, `edad`, `escolaridad`, `carrera`, `Institución`, `grupo_prioritario`, `area_carrera`. `municipio` queda fuera a propósito (mapa y RIDET).
+- Cada valor imputado queda marcado (`<columna>_imputado`, `datos_imputados`): se ve en la ficha como «(imputado)», en el directorio y el Explorador (y sus exportaciones) y en un plegable en Inicio y Personas.
+- Los formularios usan `datos.maestras_reales` (sin imputar) para que un valor imputado no se guarde como si fuera real.
+- Interruptor: `IMPUTAR_DATOS_FALTANTES` en `core/constantes.py`. Sin migraciones ni cambios en datos, permisos o RLS.
+- `scripts/evaluar_imputacion.py` mide el acierto y el cambio en la distribución con datos reales exportados.

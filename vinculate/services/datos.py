@@ -57,6 +57,8 @@ def _derivado(uid: str, nombre: str, huellas: tuple, _crudos: tuple) -> pd.DataF
         return preparar_personas_dashboard(_crudos[0])
     if nombre == "maestras":
         return obtener_personas_maestras(_crudos[0])
+    if nombre == "maestras_reales":
+        return obtener_personas_maestras(_crudos[0], imputar=False)
     if nombre == "vacantes":
         return preparar_vacantes_dashboard(_crudos[0])
     if nombre == "vinculaciones":
@@ -86,6 +88,12 @@ def personas_dashboard(sesion: Sesion) -> pd.DataFrame:
 def maestras(sesion: Sesion) -> pd.DataFrame:
     h = _huella(sesion, "personas") if sesion.puede("personas", "view") else "-"
     return _derivado(sesion.user_id, "maestras", (h,), (crudo(sesion, "personas"),)).copy()
+
+
+def maestras_reales(sesion: Sesion) -> pd.DataFrame:
+    """Personas con SOLO los datos capturados (sin imputación). Para formularios: nunca se debe guardar un dato imputado como real."""
+    h = _huella(sesion, "personas") if sesion.puede("personas", "view") else "-"
+    return _derivado(sesion.user_id, "maestras_reales", (h,), (crudo(sesion, "personas"),)).copy()
 
 
 def vacantes(sesion: Sesion) -> pd.DataFrame:

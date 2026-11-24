@@ -105,6 +105,7 @@ def render() -> None:
         return
 
     f = filtros.barra(p, v)
+    paneles.nota_imputacion(p)
     n_sel = st.session_state.get("_sel_n", 0)
     selecciones: dict[str, tuple[str, str]] = {}
 

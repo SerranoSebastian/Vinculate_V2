@@ -137,6 +137,7 @@ def _seccion_analisis(s: Sesion) -> None:
     if pf.empty:
         ui.vacio()
         return
+    paneles.nota_imputacion(df)
     pv = solo_vinculaciones(pf)  # las personas solo registradas cuentan como personas, no como vinculaciones
     por_persona = pv.groupby("id_persona_maestro").size()
     unicas, vinc = int(pf["id_persona_maestro"].nunique()), len(pv)
@@ -235,9 +236,12 @@ def _seccion_directorio(s: Sesion, preseleccion: str | None) -> None:
     st.caption(f"{len(vista)} persona(s)" + (f" · mostrando las primeras {MAX_FILAS_BUSQUEDA}" if len(vista) > MAX_FILAS_BUSQUEDA else ""))
     tabla = vista.head(MAX_FILAS_BUSQUEDA)
     ui.ayuda_grafica("personas.tabla_directorio", fila_propia=True)
-    idx = ui.tabla(tabla, ["nombre", "id_persona_maestro", "municipio", "carrera", "Institución", "total_vinculaciones", "ultima_fecha"],
+    cols_dir = ["nombre", "id_persona_maestro", "municipio", "carrera", "Institución", "total_vinculaciones", "ultima_fecha"]
+    if "datos_imputados" in tabla.columns:
+        cols_dir.append("datos_imputados")
+    idx = ui.tabla(tabla, cols_dir,
                    {"nombre": "Nombre", "id_persona_maestro": "ID", "municipio": "Municipio", "carrera": "Carrera",
-                    "total_vinculaciones": "Vinculaciones", "ultima_fecha": "Última fecha"}, fechas=("ultima_fecha",),
+                    "total_vinculaciones": "Vinculaciones", "ultima_fecha": "Última fecha", "datos_imputados": "Datos completados"}, fechas=("ultima_fecha",),
                    altura=300, key="dir_tabla", seleccionable=True)
     ui.boton_exportar(s, "personas", vista, "personas_directorio", "personas_dir")
     elegido = None
@@ -255,7 +259,7 @@ def _seccion_directorio(s: Sesion, preseleccion: str | None) -> None:
 # ------------------------------------------------------------------------ alta
 def _seccion_alta(s: Sesion, preseleccion: str | None) -> None:
     df = datos.personas(s)
-    maestras = datos.maestras(s) if not df.empty else pd.DataFrame()
+    maestras = datos.maestras_reales(s) if not df.empty else pd.DataFrame()  # sin imputación: lo que se prellena puede guardarse
     st.markdown("Una persona **nueva** solo se **registra**: todavía no cuenta como vinculada, lo será cuando se le cree un seguimiento con una empresa "
                 "en «Vinculaciones». El sistema le asigna su ID **al guardar** (así nunca choca con capturas simultáneas de otras personas). "
                 "Si la persona ya existe, la captura se agrega a su historial y se conserva su ID.")

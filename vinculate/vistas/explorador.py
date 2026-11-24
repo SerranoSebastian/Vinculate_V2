@@ -19,9 +19,9 @@ BASES = {
 }
 COLS_VISTA = {
     "personas": ["id_persona_maestro", "nombre", "sexo", "edad", "municipio", "escolaridad", "carrera", "Institución",
-                 "grupo_prioritario", "telefono", "correo", "total_vinculaciones", "tipos_vinculacion", "años_con_registro"],
+                 "grupo_prioritario", "telefono", "correo", "total_vinculaciones", "tipos_vinculacion", "años_con_registro", "datos_imputados"],
     "historicos": ["id_persona", "id_persona_maestro", "nombre", "municipio", "carrera", "Institución", "vinculacion",
-                   "estatus_vinculacion", "fecha_registro", "Año"],
+                   "estatus_vinculacion", "fecha_registro", "Año", "datos_imputados"],
     "vacantes": ["ID Vacante", "Empresa", "Sector Empresa", "Puesto Original", "Tipo de Vacante", "Tipo de Oportunidad",
                  "Área de Oportunidad", "Estado", "Fecha", "fecha_cierre", "Link de la Publicación"],
     "vinculaciones": ["id_vinculacion", "id_persona_maestro", "nombre_persona", "empresa", "sector_empresa", "tipo_vacante",
@@ -33,7 +33,7 @@ def _base(sesion, clave: str) -> pd.DataFrame:
     if clave == "personas":
         return datos.maestras(sesion)
     if clave == "historicos":
-        return datos.personas(sesion)
+        return datos.personas_dashboard(sesion)
     if clave == "vacantes":
         return datos.vacantes(sesion)
     return datos.vinculaciones(sesion)

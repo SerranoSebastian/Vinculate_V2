@@ -102,3 +102,10 @@ ALIASES_PERSONAS = {
 # Paleta institucional SEDECO Tlaxcala
 PALETA_SEDECO = ["#AF2140", "#D0B786", "#922542", "#F2E6D3", "#62182F"]
 ESCALA_SEDECO = ["#F2E6D3", "#D0B786", "#AF2140", "#922542", "#62182F"]
+
+
+# Imputación proporcional de datos faltantes (ver core/imputacion.py). Solo se aplica al CONSULTAR; nunca se guarda en la base.
+# Pon False para ver los datos tal como fueron capturados. «municipio» queda fuera a propósito: el mapa y el RIDET dependen
+# de dónde vive realmente la persona y repartirla en otro municipio daría una lectura territorial falsa.
+IMPUTAR_DATOS_FALTANTES = True
+COLUMNAS_IMPUTABLES = ["sexo", "edad", "escolaridad", "carrera", "Institución", "grupo_prioritario", "area_carrera"]

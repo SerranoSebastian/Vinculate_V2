@@ -21,13 +21,20 @@ CAMPOS_CALIDAD = ["telefono", "correo", "municipio", "carrera", "Institución", 
 
 
 def _faltantes(fila) -> list[str]:
+    """Campos clave que no fueron capturados (los completados por imputación también cuentan como no capturados)."""
     nombres = dict(CAMPOS_PERFIL)
     out = []
     for c in CAMPOS_CALIDAD:
         v = fila.get(c)
-        if texto_vacio(v) or es_nulo(v):
+        if texto_vacio(v) or es_nulo(v) or bool(fila.get(f"{c}_imputado", False)):
             out.append(nombres[c])
     return out
+
+
+def _valor_perfil(fila, campo: str) -> str:
+    """Valor para mostrar; si fue completado por imputación se indica."""
+    v = visible(fila.get(campo))
+    return f"{v} *(imputado)*" if bool(fila.get(f"{campo}_imputado", False)) else v
 
 
 def _anio_txt(r) -> str:
@@ -84,7 +91,7 @@ def contenido(sesion: Sesion, id_maestro: str) -> None:
     with t1:
         cols = st.columns(3)
         for n, (campo, etiqueta) in enumerate(CAMPOS_PERFIL):
-            cols[n % 3].markdown(f"**{etiqueta}:** {visible(fila.get(campo))}")
+            cols[n % 3].markdown(f"**{etiqueta}:** {_valor_perfil(fila, campo)}")
         nota_inst = hist.get("institucion_fuente", pd.Series(dtype=str)).eq("balanceado").any()
         if nota_inst:
             ui.nota("La institución de al menos un registro fue asignada por una corrección de balanceo, no capturada por la persona.")
@@ -114,7 +121,8 @@ def contenido(sesion: Sesion, id_maestro: str) -> None:
             st.warning("Falta información en: " + ", ".join(faltan))
         else:
             st.success("Todos los campos clave de contacto y perfil están capturados.")
-        ui.nota(f"«{SIN_DATO}», «Sin información» y los campos vacíos cuentan como dato incompleto. Nada se rellena automáticamente.")
+        ui.nota(f"«{SIN_DATO}», «Sin información» y los campos vacíos cuentan como dato incompleto. En las estadísticas generales esos datos se completan "
+                "con una distribución proporcional (imputación); aquí se indican como «imputado» y no se guardan en la base.")
 
     st.divider()
     a, b, c3 = st.columns(3)

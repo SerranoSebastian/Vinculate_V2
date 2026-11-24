@@ -9,9 +9,10 @@ from __future__ import annotations
 import pandas as pd
 
 from .constantes import (
-    ALIASES_PERSONAS, ESTATUS_REGISTRADA, PERSONAS_COLS, PERSONAS_COLS_OPCIONALES, PREFIJOS_VINCULACION,
+    ALIASES_PERSONAS, COLUMNAS_IMPUTABLES, ESTATUS_REGISTRADA, IMPUTAR_DATOS_FALTANTES, PERSONAS_COLS, PERSONAS_COLS_OPCIONALES, PREFIJOS_VINCULACION,
     TIPOS_VINCULACION,
 )
+from .imputacion import imputar_proporcional
 from .normalizacion import SINONIMOS
 from .texto import normalizar_texto, parsear_fechas, texto_vacio
 from .ubicacion import normalizar_ubicacion_mexico
@@ -162,11 +163,19 @@ def generar_id_persona_maestro(df: pd.DataFrame) -> str:
     return f"PER-{siguiente_numero_maestro(df['id_persona_maestro']):04d}"
 
 
-def preparar_personas_dashboard(df: pd.DataFrame) -> pd.DataFrame:
+def preparar_personas_dashboard(df: pd.DataFrame, imputar: bool | None = None) -> pd.DataFrame:
+    """Personas listas para analizar. `imputar=None` sigue la configuración IMPUTAR_DATOS_FALTANTES.
+
+    Es idempotente: un DataFrame ya preparado se devuelve igual (así no se vuelve a imputar ni se pierden las marcas).
+    """
+    if "es_vinculacion" in df.columns and "año" in df.columns:
+        return df.copy()
     df = limpiar_personas(df)
     df["mes"] = df["fecha_registro"].dt.to_period("M").astype(str).replace("NaT", "")
     df["año"] = pd.to_numeric(df["Año"], errors="coerce").astype("Int64")
     df["es_vinculacion"] = df["estatus_vinculacion"].ne(ESTATUS_REGISTRADA)
+    if IMPUTAR_DATOS_FALTANTES if imputar is None else imputar:
+        df = imputar_proporcional(df)
     df["grupo_edad"] = pd.cut(df["edad"], bins=GRUPOS_EDAD_BINS, labels=GRUPOS_EDAD_LABELS)
     return df
 
@@ -182,9 +191,9 @@ _COLS_PERSONA = ["nombre", "sexo", "edad", "escolaridad", "carrera", "Instituci�
                  "telefono", "correo", "grupo_prioritario", "area_carrera"]
 
 
-def obtener_personas_maestras(df: pd.DataFrame) -> pd.DataFrame:
+def obtener_personas_maestras(df: pd.DataFrame, imputar: bool | None = None) -> pd.DataFrame:
     """Una fila por persona maestra, con el dato más informativo/reciente disponible."""
-    df = preparar_personas_dashboard(df).copy()
+    df = preparar_personas_dashboard(df, imputar).copy()
     if df.empty:
         return df
     df["_fecha_ord"] = df["fecha_registro"].fillna(pd.Timestamp("1900-01-01"))
@@ -197,6 +206,11 @@ def obtener_personas_maestras(df: pd.DataFrame) -> pd.DataFrame:
             validos = validos[~validos.str.strip().str.lower().isin(["", "nan", "none", "indefinido"])]
             if len(validos):
                 base[col] = validos.iloc[-1]
+        for col in COLUMNAS_IMPUTABLES:
+            if f"{col}_imputado" in g.columns:
+                base[f"{col}_imputado"] = bool(g[f"{col}_imputado"].any())
+        if "datos_imputados" in g.columns:
+            base["datos_imputados"] = ", ".join(c for c in COLUMNAS_IMPUTABLES if base.get(f"{c}_imputado"))
         base["total_vinculaciones"] = int(g["es_vinculacion"].sum())
         base["primera_fecha"] = g["fecha_registro"].min()
         base["ultima_fecha"] = g["fecha_registro"].max()
