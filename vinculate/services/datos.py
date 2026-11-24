@@ -15,6 +15,7 @@ import streamlit as st
 
 from ..auth.sesion import Sesion
 from ..core import mapeo
+from ..core.constantes import COLUMNAS_IMPUTABLES, IMPUTAR_DATOS_FALTANTES
 from ..core.personas import limpiar_personas, obtener_personas_maestras, preparar_personas_dashboard
 from ..core.vacantes import preparar_vacantes_dashboard
 from ..core.vinculaciones import estado_por_persona, limpiar_vinculaciones
@@ -48,9 +49,18 @@ def _filas(uid: str, tipo: str, huella: str, _cliente) -> pd.DataFrame:
     return mapeo.a_dataframe(tipo, RepoTabla(_cliente, tipo).listar())
 
 
-@st.cache_data(show_spinner=False, max_entries=24, ttl=3600)
+def _firma_de_calculo() -> str:
+    """Parte de la llave de la memoria: si cambia la configuración del tratamiento de datos, lo memorizado se descarta solo."""
+    return f"{IMPUTAR_DATOS_FALTANTES}|{','.join(COLUMNAS_IMPUTABLES)}|v2"
+
+
 def _derivado(uid: str, nombre: str, huellas: tuple, _crudos: tuple) -> pd.DataFrame:
-    """Cálculos pesados (limpieza, maestras, estatus) memorizados por usuario + huellas."""
+    """Cálculos pesados (limpieza, maestras, estatus) memorizados por usuario + huellas + configuración."""
+    return _derivado_memorizado(uid, nombre, huellas, _firma_de_calculo(), _crudos)
+
+
+@st.cache_data(show_spinner=False, max_entries=24, ttl=3600)
+def _derivado_memorizado(uid: str, nombre: str, huellas: tuple, firma: str, _crudos: tuple) -> pd.DataFrame:
     if nombre == "personas":
         return limpiar_personas(_crudos[0])
     if nombre == "personas_dashboard":

@@ -149,3 +149,25 @@ def test_la_ficha_no_marca_datos_imputados():
 
     assert "datos_imputados" not in sum(explorador.COLS_VISTA.values(), [])
     assert not hasattr(ficha, "_valor_perfil")
+
+
+def test_cambiar_la_configuracion_descarta_lo_memorizado(monkeypatch):
+    """Si se cambian las columnas imputables, las pantallas no deben seguir mostrando datos procesados con la configuración vieja."""
+    filas = pers()
+    for f in filas:
+        if f["id_persona_maestro"] in ("PER-0001", "PER-0002", "PER-0003"):
+            f["municipio"] = ""
+    s = sesion_demo(cliente_demo(personas=filas))
+    from vinculate.core import constantes
+    from vinculate.services import datos as d
+
+    def configurar(cols):
+        for modulo in ("vinculate.services.datos", "vinculate.core.imputacion", "vinculate.core.personas"):
+            monkeypatch.setattr(f"{modulo}.COLUMNAS_IMPUTABLES", cols)
+
+    configurar([c for c in constantes.COLUMNAS_IMPUTABLES if c != "municipio"])
+    sin = d.maestras(s)
+    assert sin["municipio"].map(lambda v: str(v).strip() in ("", "Indefinido")).sum() > 0
+    configurar(constantes.COLUMNAS_IMPUTABLES)
+    con = d.maestras(s)
+    assert con["municipio"].map(lambda v: str(v).strip() in ("", "Indefinido")).sum() == 0
