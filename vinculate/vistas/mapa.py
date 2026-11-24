@@ -86,7 +86,7 @@ def _serie_capa(sesion: Sesion, capa: str):
         m = datos.maestras(sesion)
         return m["municipio"] if not m.empty else pd.Series(dtype=str), m, ["id_persona_maestro", "nombre", "carrera", "Institución"], ""
     if capa == "historicos":
-        p = datos.personas(sesion)
+        p = datos.personas_dashboard(sesion)
         if not p.empty:
             p = p[p["estatus_vinculacion"].ne(ESTATUS_REGISTRADA)]  # quien solo está registrada todavía no tiene vinculación
         return p["municipio"] if not p.empty else pd.Series(dtype=str), p, ["id_persona", "nombre", "vinculacion", "Año"], ""
@@ -239,7 +239,7 @@ def _bloque_empresas(sesion: Sesion):
 
 def _bloque_instituciones(sesion: Sesion):
     """(directorio, puntos válidos, sin coordenadas, con problema, hay columnas V011) de las instituciones con personas."""
-    pers = datos.personas(sesion)
+    pers = datos.personas_dashboard(sesion)
     try:
         cat = instituciones.catalogo(sesion)
     except ErrorDatos:
@@ -504,7 +504,7 @@ def _detalle_institucion(sesion: Sesion, nombre: str, dir_: pd.DataFrame) -> Non
     if f["Dirección"]:
         partes.append(f["Dirección"] + (f" (C.P. {f['C.P.']})" if f["C.P."] else ""))
     ui.nota(" · ".join(partes) + f" · Coordenadas: {f['Latitud']}, {f['Longitud']} · Personas: {int(f['Personas'])}")
-    pers = datos.personas(sesion)
+    pers = datos.personas_dashboard(sesion)
     mias = pers[pers["Institución"].astype(str).map(normalizar_texto).eq(normalizar_texto(nombre))] if not pers.empty else pers
     if mias.empty:
         ui.vacio("Esta institución no tiene personas asociadas.")

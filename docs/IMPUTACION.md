@@ -4,7 +4,7 @@ Instrucción de la dependencia: reducir los datos nulos («Indefinido») que apa
 
 ## Qué hace
 
-Para las columnas `sexo`, `edad`, `escolaridad`, `carrera`, `Institución`, `grupo_prioritario` y `area_carrera`, a cada persona que no tiene el dato se le asigna un valor siguiendo la **distribución de las personas que sí lo tienen** (probabilidad frecuencial o empírica):
+Para las columnas `sexo`, `edad`, `escolaridad`, `carrera`, `Institución`, `municipio`, `grupo_prioritario` y `area_carrera`, a cada persona que no tiene el dato se le asigna un valor siguiendo la **distribución de las personas que sí lo tienen** (probabilidad frecuencial o empírica):
 
     proporción del valor A = personas con el valor A ÷ personas con dato conocido
     personas que reciben A = proporción de A × personas sin dato
@@ -18,7 +18,7 @@ Reglas del método:
 3. Es determinista: con los mismos datos siempre da el mismo resultado (se ordena a las personas sin dato con un código estable derivado de su ID, no con azar), y no depende del orden en que se capturaron.
 4. El reparto es exacto: cada valor recibe su proporción con diferencia máxima de una persona.
 5. La edad (numérica) se completa con valores tomados de la distribución de edades conocidas.
-6. `municipio` NO se imputa: el mapa y el RIDET dependen de dónde vive realmente la persona.
+6. `municipio` también se imputa. Ojo: el mapa y el RIDET parten de dónde vive la persona, así que esas lecturas territoriales incluyen personas a las que se les asignó el municipio por proporción.
 
 ## Qué NO hace
 

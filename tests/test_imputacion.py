@@ -11,12 +11,12 @@ from vinculate.core.personas import obtener_personas_maestras, preparar_personas
 from vinculate.services import datos
 
 
-def _filas(n_derecho=60, n_conta=40, n_sin=10, **extra):
+def _filas(n_derecho=60, n_conta=40, n_sin=10, municipio="Apizaco", **extra):
     filas = []
     for i in range(1, n_derecho + n_conta + n_sin + 1):
         carrera = "Derecho" if i <= n_derecho else "Contaduría" if i <= n_derecho + n_conta else ""
         filas.append({"id_persona": f"I-{i:05d}-{i:05d}", "id_persona_maestro": f"PER-{i:04d}", "nombre": f"Persona {i}", "sexo": "Mujer",
-                      "escolaridad": "Superior", "carrera": carrera, "institucion": "UATx", "municipio": "", "vinculacion": "Atención",
+                      "escolaridad": "Superior", "carrera": carrera, "institucion": "UATx", "municipio": municipio, "vinculacion": "Atención",
                       "fecha_registro": "2026-03-01", "anio": 2026, "estatus_vinculacion": "Vinculado", **extra})
     return filas
 
@@ -42,10 +42,14 @@ def test_no_toca_lo_capturado_y_no_inventa_columnas_sin_datos():
     assert d["datos_imputados"].eq("carrera").sum() == 10
 
 
-def test_municipio_nunca_se_imputa():
-    d = preparar_personas_dashboard(_df(_filas()))          # todos con municipio vacío
-    assert (d["municipio"] == "").all() or d["municipio"].map(lambda v: str(v).strip() == "").all()
-    assert "municipio_imputado" not in d.columns
+def test_municipio_tambien_se_completa_con_la_distribucion_conocida():
+    filas = []
+    for i in range(1, 101):
+        f = _filas(1, 0, 0)[0]
+        f.update(id_persona=f"I-{i:05d}-{i:05d}", id_persona_maestro=f"PER-{i:04d}", municipio="APIZACO" if i <= 40 else "HUAMANTLA" if i <= 80 else "")
+        filas.append(f)
+    d = preparar_personas_dashboard(_df(filas))
+    assert d["municipio_imputado"].sum() == 20 and d["municipio"].value_counts().to_dict() == {"APIZACO": 50, "HUAMANTLA": 50}
 
 
 def test_es_determinista_y_no_depende_del_orden_de_las_filas():
