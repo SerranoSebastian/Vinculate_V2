@@ -145,7 +145,7 @@
 
 - Instrucción de la dependencia: «imputar» los nulos en lugar de mostrarlos como «Indefinido». Se implementó la distribución proporcional (probabilidad frecuencial): cada persona sin dato recibe un valor según la proporción que tienen las personas con dato conocido. Detalle y justificación en `docs/IMPUTACION.md`.
 - Se aplica **solo al consultar** (`preparar_personas_dashboard`), nunca se guarda en la base (Supabase sigue siendo la fuente de verdad). Columnas: `sexo`, `edad`, `escolaridad`, `carrera`, `Institución`, `grupo_prioritario`, `area_carrera`. `municipio` queda fuera a propósito (mapa y RIDET).
-- Cada valor imputado queda marcado (`<columna>_imputado`, `datos_imputados`): se ve en la ficha como «(imputado)», en el directorio y el Explorador (y sus exportaciones) y en un plegable en Inicio y Personas.
+- Por decisión de la dependencia, la plataforma **no muestra** marcas, avisos ni columnas sobre la imputación (el método se explica de forma verbal). Internamente se conservan las columnas `<columna>_imputado` y `datos_imputados`, no visibles, y la base original no cambia. Una prueba (`test_la_plataforma_no_menciona_la_imputacion`) vigila que no aparezca nada en pantalla.
 - Los formularios usan `datos.maestras_reales` (sin imputar) para que un valor imputado no se guarde como si fuera real.
 - Interruptor: `IMPUTAR_DATOS_FALTANTES` en `core/constantes.py`. Sin migraciones ni cambios en datos, permisos o RLS.
 - `scripts/evaluar_imputacion.py` mide el acierto y el cambio en la distribución con datos reales exportados.

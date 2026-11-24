@@ -137,7 +137,6 @@ def _seccion_analisis(s: Sesion) -> None:
     if pf.empty:
         ui.vacio()
         return
-    paneles.nota_imputacion(df)
     pv = solo_vinculaciones(pf)  # las personas solo registradas cuentan como personas, no como vinculaciones
     por_persona = pv.groupby("id_persona_maestro").size()
     unicas, vinc = int(pf["id_persona_maestro"].nunique()), len(pv)
@@ -236,12 +235,9 @@ def _seccion_directorio(s: Sesion, preseleccion: str | None) -> None:
     st.caption(f"{len(vista)} persona(s)" + (f" · mostrando las primeras {MAX_FILAS_BUSQUEDA}" if len(vista) > MAX_FILAS_BUSQUEDA else ""))
     tabla = vista.head(MAX_FILAS_BUSQUEDA)
     ui.ayuda_grafica("personas.tabla_directorio", fila_propia=True)
-    cols_dir = ["nombre", "id_persona_maestro", "municipio", "carrera", "Institución", "total_vinculaciones", "ultima_fecha"]
-    if "datos_imputados" in tabla.columns:
-        cols_dir.append("datos_imputados")
-    idx = ui.tabla(tabla, cols_dir,
+    idx = ui.tabla(tabla, ["nombre", "id_persona_maestro", "municipio", "carrera", "Institución", "total_vinculaciones", "ultima_fecha"],
                    {"nombre": "Nombre", "id_persona_maestro": "ID", "municipio": "Municipio", "carrera": "Carrera",
-                    "total_vinculaciones": "Vinculaciones", "ultima_fecha": "Última fecha", "datos_imputados": "Datos completados"}, fechas=("ultima_fecha",),
+                    "total_vinculaciones": "Vinculaciones", "ultima_fecha": "Última fecha"}, fechas=("ultima_fecha",),
                    altura=300, key="dir_tabla", seleccionable=True)
     ui.boton_exportar(s, "personas", vista, "personas_directorio", "personas_dir")
     elegido = None

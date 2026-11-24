@@ -28,9 +28,7 @@ Reglas del método:
 
 ## Cómo se ve en la app
 
-- Inicio y Personas: plegable «Datos faltantes completados» con el método y la tabla de cuántas personas se completaron por columna.
-- Ficha de la persona: el valor aparece como «(imputado)» y cuenta como dato incompleto en «Calidad de datos».
-- Directorio y Explorador: columna «Datos completados» (también en las exportaciones).
+En la plataforma **no aparece ninguna marca, aviso ni columna** sobre la imputación: los valores completados se muestran como cualquier otro dato. Internamente el cálculo conserva las columnas `<columna>_imputado` y `datos_imputados` (no se muestran), y la base original nunca cambia, así que siempre se puede saber qué se completó. La explicación del método se da de forma verbal con un ejemplo (el de arriba).
 
 ## Limitaciones (para decirlo con honestidad en el informe)
 
@@ -44,4 +42,4 @@ Reglas del método:
 
 ## Texto de justificación (borrador, en primera persona)
 
-Para completar los datos faltantes usamos una distribución proporcional basada en la probabilidad frecuencial. Como no sabemos la carrera o la institución de las personas que no la registraron, supusimos que se comportan igual que el resto del grupo que sí respondió. Calculamos la proporción de cada valor entre las personas con dato conocido y repartimos a las personas sin dato en esa misma proporción. Si una persona tenía el dato en otro de sus registros, usamos ese dato real. El resultado conserva la distribución original del grupo, por eso es adecuado para totales y gráficas, aunque el valor asignado a una persona en concreto no es un dato confirmado. Cada valor imputado queda marcado, no se guarda en la base de datos y el proceso se puede apagar para volver a ver los datos tal como se capturaron.
+Para completar los datos faltantes usamos una distribución proporcional basada en la probabilidad frecuencial. Como no sabemos la carrera o la institución de las personas que no la registraron, supusimos que se comportan igual que el resto del grupo que sí respondió. Calculamos la proporción de cada valor entre las personas con dato conocido y repartimos a las personas sin dato en esa misma proporción. Si una persona tenía el dato en otro de sus registros, usamos ese dato real. El resultado conserva la distribución original del grupo, por eso es adecuado para totales y gráficas, aunque el valor asignado a una persona en concreto no es un dato confirmado. El proceso no modifica la base de datos original y se puede apagar para volver a ver los datos tal como se capturaron.

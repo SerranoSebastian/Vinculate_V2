@@ -108,8 +108,16 @@ def test_los_formularios_usan_personas_sin_imputar():
     assert reales["carrera"].map(lambda v: str(v).strip() == "").sum() > 0                                 # formularios: lo capturado
 
 
+def _textos_visibles(at) -> str:
+    partes = [m.value for m in at.markdown] + [c.value for c in at.caption] + [e.label for e in at.expander]
+    partes += [str(c) for df in at.dataframe for c in df.value.columns]
+    return " ".join(partes).lower()
+
+
 @pytest.mark.apptest
-def test_inicio_muestra_la_explicacion_cuando_hay_datos_completados():
+@pytest.mark.parametrize("pagina", ["inicio", "personas", "explorador"])
+def test_la_plataforma_no_menciona_la_imputacion(pagina):
+    """Los datos completados se explican de forma verbal: en pantalla no debe aparecer ninguna marca ni aviso."""
     from streamlit.testing.v1 import AppTest
 
     from tests.test_paginas import _app
@@ -119,9 +127,21 @@ def test_inicio_muestra_la_explicacion_cuando_hay_datos_completados():
     for f in filas:
         if f["id_persona_maestro"] in ("PER-0001", "PER-0002", "PER-0003"):
             f["carrera"] = ""
-    at = AppTest.from_function(_app, default_timeout=60)
-    at.session_state[CLAVE_SESION] = sesion_demo(cliente_demo(personas=filas))
-    at.session_state["_pagina_prueba"] = "inicio"
-    at.run()
-    assert not at.exception, [e.value for e in at.exception]
-    assert any("imputación proporcional" in e.label for e in at.expander)
+    for base in ("personas", "historicos") if pagina == "explorador" else ("personas",):
+        at = AppTest.from_function(_app, default_timeout=60)
+        at.session_state[CLAVE_SESION] = sesion_demo(cliente_demo(personas=filas))
+        at.session_state["_pagina_prueba"] = pagina
+        if pagina == "explorador":
+            at.session_state["explorador_base"] = base
+        if pagina == "personas":
+            at.session_state["personas_apartado"] = "👤 Directorio y ficha"
+        at.run()
+        assert not at.exception, [e.value for e in at.exception]
+        assert "imput" not in _textos_visibles(at) and "completad" not in _textos_visibles(at)
+
+
+def test_la_ficha_no_marca_datos_imputados():
+    from vinculate.vistas import explorador, ficha
+
+    assert "datos_imputados" not in sum(explorador.COLS_VISTA.values(), [])
+    assert not hasattr(ficha, "_valor_perfil")

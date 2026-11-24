@@ -19,9 +19,9 @@ BASES = {
 }
 COLS_VISTA = {
     "personas": ["id_persona_maestro", "nombre", "sexo", "edad", "municipio", "escolaridad", "carrera", "Institución",
-                 "grupo_prioritario", "telefono", "correo", "total_vinculaciones", "tipos_vinculacion", "años_con_registro", "datos_imputados"],
+                 "grupo_prioritario", "telefono", "correo", "total_vinculaciones", "tipos_vinculacion", "años_con_registro"],
     "historicos": ["id_persona", "id_persona_maestro", "nombre", "municipio", "carrera", "Institución", "vinculacion",
-                   "estatus_vinculacion", "fecha_registro", "Año", "datos_imputados"],
+                   "estatus_vinculacion", "fecha_registro", "Año"],
     "vacantes": ["ID Vacante", "Empresa", "Sector Empresa", "Puesto Original", "Tipo de Vacante", "Tipo de Oportunidad",
                  "Área de Oportunidad", "Estado", "Fecha", "fecha_cierre", "Link de la Publicación"],
     "vinculaciones": ["id_vinculacion", "id_persona_maestro", "nombre_persona", "empresa", "sector_empresa", "tipo_vacante",

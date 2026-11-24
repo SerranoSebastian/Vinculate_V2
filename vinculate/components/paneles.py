@@ -3,11 +3,8 @@ from __future__ import annotations
 
 import pandas as pd
 import plotly.graph_objects as go
-import streamlit as st
 
 from ..config.theme import PALETA_SEDECO, tema_grafica
-from ..core.constantes import IMPUTAR_DATOS_FALTANTES
-from ..core.imputacion import resumen_imputacion
 from ..core.normalizacion import agrupar_tipo_vinculacion
 from ..core.personas import solo_vinculaciones
 from . import charts
@@ -50,22 +47,3 @@ def evolucion_anual(pf: pd.DataFrame, clave: str) -> bool:
 def tipos_vinculacion(pf: pd.DataFrame, clave: str) -> None:
     d = charts.conteo(agrupar_tipo_vinculacion(solo_vinculaciones(pf)["vinculacion"]), "Tipo", "Vinculaciones")
     charts.mostrar(charts.dona(d, "Tipo", "Vinculaciones", "Vinculaciones por tipo", 380), clave)
-
-
-def nota_imputacion(personas: pd.DataFrame | None) -> None:
-    """Aviso plegable que explica cómo se completaron los datos faltantes y cuántos casos fueron (si los hubo)."""
-    if not IMPUTAR_DATOS_FALTANTES or personas is None or personas.empty or "datos_imputados" not in personas.columns:
-        return
-    res = resumen_imputacion(personas)
-    res = res[res["Completadas"] > 0]
-    if res.empty:
-        return
-    from . import ui
-    with st.expander("ℹ️ Datos faltantes completados (imputación proporcional)"):
-        st.markdown(
-            "Cuando a una persona le falta un dato (por ejemplo la carrera o la institución), en las estadísticas se completa repartiendo esos casos "
-            "en la **misma proporción** que tienen las personas que sí lo tienen: *personas con ese valor ÷ personas con dato conocido*. "
-            "Si una persona tiene el dato en otro de sus registros, se usa ese y no se imputa.  \n"
-            "Sirve para totales y gráficas; el valor asignado a una persona en particular no es un dato capturado por ella. "
-            "Se indica como «imputado» en su ficha, en el Explorador y en la columna «Datos completados», y **no se guarda en la base**.")
-        ui.tabla(res, altura=min(60 + 36 * len(res), 320))
