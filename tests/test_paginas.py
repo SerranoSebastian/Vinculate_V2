@@ -6,20 +6,20 @@ from tests.demo import cliente_demo, sesion_demo
 from vinculate.auth.sesion import CLAVE_SESION
 
 pytestmark = pytest.mark.apptest
-PAGINAS = ["inicio", "personas", "vacantes", "vinculaciones", "explorador", "ridet", "mapa", "busqueda", "administracion"]
+PAGINAS = ["inicio", "personas", "vacantes", "vinculaciones", "explorador", "ridet", "mapa", "busqueda", "administracion", "reporte"]
 
 
 def _app():
     import streamlit as st
 
     from vinculate.config.theme import aplicar_estilos
-    from vinculate.vistas import administracion, busqueda, explorador, inicio, mapa, personas, ridet, vacantes, vinculaciones
+    from vinculate.vistas import administracion, busqueda, explorador, inicio, mapa, personas, reporte, ridet, vacantes, vinculaciones
 
     aplicar_estilos()
     pagina = st.session_state["_pagina_prueba"]
     {"inicio": inicio.render, "personas": personas.render, "vacantes": vacantes.render, "vinculaciones": vinculaciones.render,
      "explorador": explorador.render, "ridet": ridet.render, "mapa": mapa.render, "busqueda": busqueda.render,
-     "administracion": administracion.render, "cuenta": administracion.render_cuenta}[pagina]()
+     "administracion": administracion.render, "reporte": reporte.render, "cuenta": administracion.render_cuenta}[pagina]()
 
 
 def _correr(pagina, sesion):

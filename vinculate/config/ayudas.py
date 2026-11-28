@@ -706,6 +706,23 @@ La lista muestra el nombre, el identificador y el número de vinculaciones hist�
 
 El botón de descarga genera un archivo con todos los seguimientos.""",
 
+    # ------------------------------------------------------------------ REPORTE
+    "reporte.tipo": """Elige qué reporte quieres. El general resume todo el programa. El de un municipio o el de una institución muestra solo a las personas de ese municipio o de esa institución, y dice qué parte del total representan.""",
+
+    "reporte.indicadores": """Son las cifras principales del reporte. Una persona se cuenta una sola vez, aunque tenga varias vinculaciones.
+
+Son las mismas cifras que aparecen en Inicio para el mismo periodo.""",
+
+    "reporte.tasa_colocacion": """Es el porcentaje de las personas con al menos una vinculación que ya fueron colocadas en una empresa.
+
+Solo cuenta las colocaciones registradas en la plataforma.""",
+
+    "reporte.embudo": """Muestra cuántas personas llegaron a cada etapa: primero se atiende a la persona, después se le vincula con una empresa o programa y, al final, queda colocada en una empresa.
+
+Cada barra es un subconjunto de la anterior.""",
+
+    "reporte.nota": """Es un texto libre que se imprime al final del PDF. Sirve para dar contexto al periodo o hacer una aclaración. No cambia ninguna cifra.""",
+
     # ------------------------------------------------------------------ ADMINISTRACIÓN · Instituciones
     "instituciones.kpi_total": """Es el número de instituciones educativas (universidades y escuelas) que ya tienen al menos una persona asociada en la base. Solo se listan estas.""",
 

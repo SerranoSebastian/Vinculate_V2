@@ -13,7 +13,7 @@ from vinculate.config.settings import LOGO_HORIZONTAL, LOGO_PORTADA, VERSION_APP
 from vinculate.config.theme import aplicar_estilos
 from vinculate.repositories.errores import SesionExpirada
 from vinculate.services import datos
-from vinculate.vistas import administracion, busqueda, explorador, inicio, mapa, personas, ridet, vacantes, vinculaciones
+from vinculate.vistas import administracion, busqueda, explorador, inicio, mapa, personas, reporte, ridet, vacantes, vinculaciones
 
 st.set_page_config(page_title="Vincúlate SEDECO", page_icon="🤝", layout="wide", initial_sidebar_state="expanded")
 aplicar_estilos()
@@ -79,6 +79,8 @@ def _paginas(s: Sesion) -> dict[str, st.Page]:
     catalogo: list[tuple[str, str, tuple]] = []  # (sección, clave, (clave, página))
     if s.puede("inicio", "view"):
         catalogo.append(("Panorama", "inicio", pagina("inicio", inicio.render, "Inicio", "📊")))
+    if s.puede("inicio", "view") and s.puede("personas", "view"):
+        catalogo.append(("Panorama", "reporte", pagina("reporte", reporte.render, "Reporte", "📄")))
     if s.puede("ridet", "view"):
         catalogo.append(("Panorama", "mapa", pagina("mapa", mapa.render, "Mapa territorial", "🗺️")))
         catalogo.append(("Panorama", "ridet", pagina("ridet", ridet.render, "RIDET", "🧭")))

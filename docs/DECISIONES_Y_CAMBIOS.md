@@ -149,3 +149,12 @@
 - Los formularios usan `datos.maestras_reales` (sin imputar) para que un valor imputado no se guarde como si fuera real.
 - Interruptor: `IMPUTAR_DATOS_FALTANTES` en `core/constantes.py`. Sin migraciones ni cambios en datos, permisos o RLS.
 - `scripts/evaluar_imputacion.py` mide el acierto y el cambio en la distribución con datos reales exportados.
+
+## Reporte informativo (PDF y Excel)
+
+- Nueva página **Panorama → Reporte**: documento para mostrar el avance y el aporte del programa. Tres tipos: general, por municipio y por institución; periodo por años (vacío = todos). Vista previa en pantalla y descarga en **PDF** (carta, 3–4 páginas con logo) y **Excel** con las tablas de respaldo. Una nota libre opcional se imprime al final del PDF.
+- Contenido: cifras principales, lectura rápida en palabras, embudo (personas atendidas → con vinculación → colocadas), avance por año (personas, vinculaciones, colocaciones), colocaciones acumuladas, tipos de vinculación, municipios, perfil (sexo, escolaridad, edad, grupo prioritario), instituciones de origen y empresas con más colocaciones. Los reportes por municipio o institución dicen además qué parte del total estatal representan.
+- Las cifras salen de las mismas reglas de Inicio (personas únicas, vinculaciones, colocaciones); una prueba compara ambas. Todo es agregado: no incluye nombres ni datos de contacto (también se prueba). No menciona la imputación.
+- Limitaciones declaradas dentro del PDF («Cómo leer este reporte»): lo histórico anterior al control de colocaciones cuenta como vinculación y las colocaciones se contabilizan desde que se registran en la plataforma; no hay «antes y después» porque no hay línea base, solo crecimiento por año.
+- **Permisos:** ver la página exige `inicio.view` y `personas.view`; descargar exige `inicio.export` (sin migración, se reutiliza el módulo Inicio). Sin `vinculaciones.view` el reporte omite colocaciones. Cada descarga se audita (`inicio_reporte`).
+- Código: `core/reportes.py` (cifras, puro), `services/reporte_pdf.py` (matplotlib + reportlab, en memoria), `services/reportes.py` (permisos y auditoría), `vistas/reporte.py`. Dependencias nuevas en `requirements.txt`: `matplotlib` y `reportlab`. Gráficas con colores en orden fijo validados para daltonismo y contraste. Solo lectura: no escribe en la base ni requiere migración.
